@@ -1,0 +1,63 @@
+---
+title: "DOM Event Handling with DiWu"
+sidebarTitle: "Events"
+description: "DiWu adds .on(), .off(), .once(), and .promiseMeOnce() to EventTarget with a WeakMap registry that prevents duplicate listeners."
+---
+
+DiWu adds four event methods to `EventTarget.prototype`, all backed by a `WeakMap` + `Map` registry that tracks every listener by element identity and event type. This registry prevents duplicate registrations, makes wildcard removal possible, and ensures that `once`-style listeners clean up after themselves reliably. All methods return `this` for chaining, with the exception of `promiseMeOnce`, which returns a `Promise`.
+
+## `el.on(eventType, listener, options?)`
+
+Adds an event listener to the element. `eventType` can be a single event name string or an array of event name strings — useful when multiple events should share a handler. If the exact `listener` function has already been registered for that event type, the duplicate is silently ignored.
+
+```js
+btn.on('click', handler);
+
+// Multiple events at once:
+btn.on(['mouseenter', 'focus'], showTooltip);
+```
+
+## `el.off(eventType?, listener?)`
+
+Removes previously registered listeners from the element. The `eventType` parameter defaults to `'*'`, which acts as a wildcard and removes every listener on the element regardless of type. Pass an array of event types to remove all listeners for several events at once. If `listener` is supplied, only that specific function is removed; if omitted, all listeners for the given event type are removed.
+
+```js
+btn.off('click', handler);    // remove one specific listener
+btn.off('click');             // remove all 'click' listeners
+btn.off('*');                 // remove ALL listeners on this element
+btn.off(['click', 'focus']);  // remove all listeners for multiple events
+```
+
+Returns `this`.
+
+## `el.once(eventType, listener, options?)`
+
+Registers a listener that fires exactly once and is then automatically removed. Internally, DiWu wraps `listener` in a function that calls `this.off(eventType, wrappedListener)` after invocation and passes `{ ...options, once: true }` to `addEventListener`. Returns `this`.
+
+```js
+dialog.once('close', cleanup);
+```
+
+## `el.promiseMeOnce(eventType, listener, options?)`
+
+Like `once`, but instead of returning `this` it returns a `Promise` that resolves when the event fires. The `listener` is still invoked (synchronously, before the Promise resolves), making it possible to both handle the event and `await` it in the same flow. The wrapped listener is automatically removed from the registry after it fires.
+
+```js
+await btn.promiseMeOnce('click', (e) => console.log('clicked'));
+console.log('User clicked the button');
+```
+
+## `promise.wait(ms)`
+
+Added to `Promise.prototype`. Inserts a delay of `ms` milliseconds between the current Promise resolution and the next `.then()` handler. The resolved value is passed through unchanged, so it composes cleanly into existing chains.
+
+```js
+fetch('/api/data')
+  .then(r => r.json())
+  .wait(500)
+  .then(data => render(data));
+```
+
+<Note>
+  Duplicate listeners are silently ignored — calling `.on()` with the same listener function and event type pair more than once is safe and will not result in the handler firing multiple times.
+</Note>

@@ -1,0 +1,318 @@
+---
+title: "Writing Tests and Assertions with FireWyrm"
+sidebarTitle: "Tests & Assertions"
+description: "Learn fw.start(), fw.section(), fw.test(), fw.assert(), and all 30+ chainable assertion matchers available in FireWyrm."
+---
+
+FireWyrm provides two complementary ways to write tests: `fw.test()` for boolean-return tests and `fw.assert()` for chainable-matcher assertions. Both methods are async-safe, both enqueue to the same sequential internal queue and execute in registration order, and both return `fw` so you can chain calls fluently. The moment you call `fw.start()` the queue begins draining automatically — you never need to trigger a run manually.
+
+---
+
+## Core methods
+
+### `fw.start()`
+
+Marks the beginning of a test run. Sets the internal `runningTest` flag to `true`, which prevents `fw.end()` from being called implicitly by standalone `fw.test()` or `fw.assert()` calls. Pushes the FireWyrm banner to the output buffer.
+
+Returns `fw`.
+
+```js
+fw.start();
+```
+
+---
+
+### `fw.section(name)`
+
+Groups all subsequent tests under a named section until the next `fw.section()` call or `fw.end()`. When the section closes, FireWyrm emits a `===` header, lists every test result indented under it, and appends a `SECTION RESULTS: x/y passed` summary line.
+
+Returns `fw`.
+
+```js
+fw.section('User Authentication');
+fw.test('Login succeeds', () => login('alice', 'secret') !== null);
+
+fw.section('Data Layer');
+fw.test('DB connect', async () => {
+  const ok = await db.ping();
+  return ok;
+});
+```
+
+---
+
+### `fw.test(statement, testFunc)`
+
+Enqueues a test. `testFunc` may be a synchronous or asynchronous function; FireWyrm awaits it and evaluates the return value as a boolean. A truthy result is a pass; a falsy result or an uncaught exception is a failure.
+
+Returns `fw`.
+
+```js
+fw.test('Array has item', () => [1, 2, 3].includes(2));
+
+fw.test('Async fetch', async () => {
+  const data = await fetchJson('/api/test');
+  return data.ok === true;
+});
+```
+
+---
+
+### `fw.assert(statement, testValue)`
+
+Creates an assertion chain. `testValue` can be a raw value, a synchronous function that returns the value under test, or a `Promise` — FireWyrm resolves it before passing it to the matcher. Call one matcher method on the returned object to enqueue the test.
+
+Returns a chainable assertion object (see [Assertion matchers](#assertion-matchers) below).
+
+```js
+fw.assert('2 + 2', () => 2 + 2).is(4);
+fw.assert('Type check', typeof 'hello').isString();
+fw.assert('Async value', fetchJson('/api/ping')).resolvesTo({ ok: true });
+```
+
+---
+
+### `fw.end(verbose?)`
+
+Closes the current section (if any), appends the final results block to the output buffer, then flushes everything to `fw.loggingfunc` in a single ordered pass. Resets internal counters so FireWyrm can be used again.
+
+`verbose` defaults to `true`. When `false`, the final `=== FINAL RESULTS ===` summary is suppressed — useful when FireWyrm calls `end()` internally to flush a standalone `fw.assert()` that was called outside a `fw.start()` / `fw.end()` block.
+
+Returns a `Promise` that resolves when all enqueued tests have completed and all output has been flushed.
+
+```js
+// Fire and forget
+fw.end();
+
+// Chain follow-on logic
+fw.end().then(() => console.log('All done'));
+
+// Or await in an async context
+await fw.end();
+```
+
+---
+
+### `fw.loggingfunc`
+
+All output goes through `fw.loggingfunc`. It defaults to `console.log`. Override it to redirect results anywhere — a DOM element, a server log, a test reporter, etc.
+
+```js
+const logPanel = document.getElementById('test-output');
+fw.loggingfunc = (msg) => {
+  logPanel.textContent += msg + '\n';
+};
+```
+
+---
+
+### `fw.onprogress`
+
+Assign a callback to receive real-time progress events. FireWyrm calls it at key milestones (`=== FINAL RESULTS ===`, individual result lines, `Testing complete`) _before_ the buffered log is flushed, so you can update a progress indicator without waiting for `fw.end()` to resolve.
+
+```js
+fw.onprogress = (msg) => {
+  statusEl.textContent = msg;
+};
+```
+
+---
+
+## Assertion matchers
+
+Every matcher is called on the object returned by `fw.assert(statement, value)`. It enqueues the test into the shared queue and returns `fw`, so you can continue registering tests on the same line or the next.
+
+### Equality
+
+| Matcher | Passes when |
+|---|---|
+| `.is(expected)` | `value === expected` (strict equality) |
+| `.closeTo(expected)` | `value == expected` (loose equality) |
+| `.deepEquals(expected)` | `JSON.stringify(value) === JSON.stringify(expected)` |
+
+```js
+fw.assert('Strict equal', 1 + 1).is(2);
+fw.assert('Loose equal', '3').closeTo(3);
+fw.assert('Deep equal', { a: 1 }).deepEquals({ a: 1 });
+```
+
+<Note>
+  There is no `.isNot()` matcher. To assert a value is not something, negate
+  the expression in the value callback, or use `.isFalsey()`.
+</Note>
+
+---
+
+### Truthiness
+
+| Matcher | Passes when |
+|---|---|
+| `.isTruthy()` | `!!value` is `true` |
+| `.isFalsey()` | `!value` is `true` |
+
+```js
+fw.assert('Non-empty string is truthy', 'hello').isTruthy();
+fw.assert('Zero is falsey', 0).isFalsey();
+```
+
+---
+
+### Type checks
+
+| Matcher | Passes when |
+|---|---|
+| `.isNull()` | `value === null` |
+| `.isUndefined()` | `value === undefined` |
+| `.isDefined()` | `value !== undefined` |
+| `.isNaN()` | `isNaN(value)` |
+| `.isNumber()` | `typeof value === 'number'` |
+| `.isString()` | `typeof value === 'string'` |
+| `.isBool()` | `typeof value === 'boolean'` |
+| `.isFunction()` | `typeof value === 'function'` |
+| `.isArray()` | `Array.isArray(value)` |
+| `.isObject()` | `typeof value === 'object' && value !== null && !Array.isArray(value)` |
+| `.isDate()` | `value instanceof Date` |
+| `.isSymbol()` | `typeof value === 'symbol'` |
+| `.isPromise()` | `value != null && typeof value.then === 'function'` |
+| `.isRegExp()` | `value instanceof RegExp` |
+
+```js
+fw.assert('String type', 'hello').isString();
+fw.assert('Array check', [1, 2, 3]).isArray();
+fw.assert('Plain object', { a: 1 }).isObject();
+fw.assert('Date instance', new Date()).isDate();
+```
+
+---
+
+### Numeric comparisons
+
+| Matcher | Passes when |
+|---|---|
+| `.greaterThan(n)` | `value > n` |
+| `.greaterThanOrEqual(n)` | `value >= n` |
+| `.lessThan(n)` | `value < n` |
+| `.lessThanOrEqual(n)` | `value <= n` |
+| `.between(min, max)` | `value >= min && value <= max` |
+| `.isEven()` | `typeof value === 'number' && value % 2 === 0` |
+| `.isOdd()` | `typeof value === 'number' && value % 2 !== 0` |
+| `.isPositive()` | `typeof value === 'number' && value > 0` |
+| `.isNegative()` | `typeof value === 'number' && value < 0` |
+| `.isInteger()` | `Number.isInteger(value)` |
+| `.isFinite()` | `Number.isFinite(value)` |
+
+```js
+fw.assert('In range', 5).between(1, 10);
+fw.assert('Even number', 4).isEven();
+fw.assert('Positive', 3).isPositive();
+fw.assert('Integer', 7).isInteger();
+```
+
+---
+
+### Errors
+
+| Matcher | Passes when |
+|---|---|
+| `.throws()` | `value` is a function and calling it throws any error |
+| `.throwsWith(...args)` | `value` is a function and calling it with `args` throws any error |
+
+The value passed to `fw.assert()` must be a **function** for these matchers — FireWyrm calls it internally and checks for a thrown exception.
+
+```js
+fw.assert('Throws', () => { throw new Error('boom'); }).throws();
+fw.assert('Throws with arg', (x) => { if (!x) throw new Error('falsy'); }).throwsWith(null);
+```
+
+---
+
+### Collections
+
+| Matcher | Passes when |
+|---|---|
+| `.contains(expected)` | `value.includes(expected)` (array or string) |
+| `.isEmpty()` | `null`, empty array, empty object, or empty string |
+| `.hasProperty(prop)` | `prop in value` |
+| `.hasLength(expected)` | `value.length === expected` |
+| `.matches(regex)` | `regex.test(value)` |
+
+```js
+fw.assert('Array contains', [1, 2, 3]).contains(2);
+fw.assert('String contains', 'firewyrm').contains('wyrm');
+fw.assert('Empty array', []).isEmpty();
+fw.assert('Has prop', { name: 'alice' }).hasProperty('name');
+fw.assert('Length', 'hello').hasLength(5);
+fw.assert('Regex match', 'test@example.com').matches(/^[\w.]+@[\w.]+$/);
+```
+
+---
+
+### Instances
+
+| Matcher | Passes when |
+|---|---|
+| `.isInstanceOf(constructor)` | `value instanceof constructor` |
+
+```js
+fw.assert('Error instance', new TypeError()).isInstanceOf(Error);
+fw.assert('Date instance', new Date()).isInstanceOf(Date);
+```
+
+---
+
+### Promises
+
+| Matcher | Passes when |
+|---|---|
+| `.resolvesTo(expected)` | The promise resolves and the resolved value `=== expected` |
+| `.failsWith(ErrorClass)` | The promise rejects with an error that is `instanceof ErrorClass` |
+
+For these matchers, pass the `Promise` itself (not a function wrapping it) as `testValue`.
+
+```js
+fw.assert('Resolves', Promise.resolve(42)).resolvesTo(42);
+fw.assert('Rejects with TypeError', Promise.reject(new TypeError('bad'))).failsWith(TypeError);
+```
+
+---
+
+## Comprehensive example
+
+```js
+fw.start();
+
+fw.section('Type Checks');
+fw.assert('String type', 'hello').isString();
+fw.assert('Array check', [1, 2]).isArray();
+fw.assert('Object check', { a: 1 }).isObject();
+fw.assert('Null check', null).isNull();
+fw.assert('Defined', 'value').isDefined();
+
+fw.section('Numeric Matchers');
+fw.assert('Range', 5).between(1, 10);
+fw.assert('Even', 4).isEven();
+fw.assert('Positive', 3).isPositive();
+fw.assert('Less than', 2).lessThan(5);
+fw.assert('Finite', 1.5).isFinite();
+
+fw.section('Collections');
+fw.assert('Contains item', [10, 20, 30]).contains(20);
+fw.assert('Empty object', {}).isEmpty();
+fw.assert('Has property', { id: 1 }).hasProperty('id');
+fw.assert('String length', 'abc').hasLength(3);
+fw.assert('Regex', 'hello world').matches(/world/);
+
+fw.section('Error Handling');
+fw.assert('Throws', () => { throw new Error('boom'); }).throws();
+fw.assert('Throws with args', (x) => { if (!x) throw new Error(); }).throwsWith(null);
+
+fw.section('Async / Promises');
+fw.assert('Resolves', Promise.resolve(42)).resolvesTo(42);
+fw.assert('Rejects', Promise.reject(new TypeError('oops'))).failsWith(TypeError);
+fw.test('Async delay', async () => {
+  await new Promise(r => setTimeout(r, 10));
+  return true;
+});
+
+fw.end();
+```

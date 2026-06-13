@@ -1,0 +1,184 @@
+---
+title: "Reactive Stores and Hash-Based Routing in TianFeng"
+sidebarTitle: "State & Routing"
+description: "TianFeng includes createStore() for deep reactive proxy state, and route for a full hash-based SPA router with guards, params, and wildcard support."
+---
+
+TianFeng ships two state management primitives: `createStore()` for deep reactive proxy objects that fire listeners on mutation, and `route` for a hash-based single-page-application router with parameterized paths, guards, and wildcard matching.
+
+## `createStore(init)` <sup>option: `stores`</sup>
+
+Returns a deeply proxied version of the `init` object. Every nested object is also wrapped, so reactivity reaches arbitrarily deep into your state tree. Listeners are dispatched asynchronously (via `setTimeout(0)`) so mutations that happen in the same tick are batched before any listener runs.
+
+### Subscribing to changes
+
+Call `.when(prop).tell(listener)` on any node in the store to register a listener. The wildcard `'*'` fires for any property change on that node.
+
+| Subscription | Listener signature |
+|---|---|
+| `.when('propName').tell(listener)` | `(newValue, target)` |
+| `.when('*').tell(listener)` | `(prop, newValue, target)` |
+
+### Negative array indices
+
+Arrays in a store support Python-style negative indexing — `store.arr[-1]` reads the last element, `store.arr[-1] = x` updates it.
+
+```js
+const state = createStore({
+  count: 0,
+  user: { name: 'Alice', role: 'admin' }
+});
+
+// Subscribe to a specific top-level property
+state.when('count').tell((val) => {
+  console.log('count changed to', val);
+});
+
+// Subscribe to any change on the nested user object
+state.user.when('*').tell((prop, val) => {
+  console.log('user.' + prop + ' =', val);
+});
+
+state.count = 1;           // fires the count listener
+state.user.name = 'Bob';   // fires the user wildcard listener
+```
+
+The weather app uses `createStore` to coordinate multi-step loading states:
+
+```js
+const appState = createStore({ state: 'init' });
+
+appState.when('state').tell((val) => {
+  if (val === 'weather') renderWeather();
+});
+
+appState.state = 'loadingToWeather'; // triggers listener
+appState.state = 'weather';          // triggers listener → renderWeather()
+```
+
+---
+
+## `route` <sup>option: `route`</sup>
+
+`route` is a full hash-based router. It listens for `hashchange` events and matches the current URL fragment against registered patterns. Call `route.init()` once to start the router after registering your routes.
+
+### Starting the router
+
+```js
+route.init(startUrl?)
+```
+
+Begins listening for `hashchange`. If `startUrl` is omitted it defaults to the current hash (minus the leading `#`). Calling `route.init()` more than once is a no-op.
+
+### Registering routes
+
+```js
+route.when(url, callback)
+```
+
+Registers `callback` for the given `url` pattern. Multiple callbacks may be registered for the same pattern — they all fire in registration order. The `callback` receives a `params` object.
+
+**URL pattern syntax:**
+
+| Syntax | Example pattern | Example URL | `params` |
+|---|---|---|---|
+| Literal | `/about` | `/about` | `{}` |
+| Named segment | `/users/:id` | `/users/42` | `{ id: '42' }` |
+| Wildcard | `/files/*` | `/files/docs/readme.md` | `{ _wildcard: 'docs/readme.md' }` |
+
+### Navigating programmatically
+
+```js
+route.go(url)     // navigate to an absolute or relative URL
+route.back()      // calls history.back()
+route.forward()   // calls history.forward()
+```
+
+`route.go` resolves relative segments: `'../'` moves one level up the current path, and `'./'` stays at the current level.
+
+### Guards
+
+```js
+route.guard(callback)
+route.unguard(callback?)
+```
+
+Guards are called before any route handler on every navigation. Multiple guards can be registered and are checked in order.
+
+**Guard callback signature:** `(to, from, cancel, redirect) => void`
+
+| Argument | Type | Description |
+|---|---|---|
+| `to` | `string` | The destination path. |
+| `from` | `string` | The previous path. |
+| `cancel()` | function | Blocks the navigation and calls `history.back()`. |
+| `redirect(url)` | function | Cancels the current navigation and goes to `url` instead. |
+
+`route.unguard(callback)` removes a specific guard function. Calling `route.unguard()` with no arguments removes **all** guards.
+
+### Removing routes
+
+```js
+route.remove(url, callback?)
+```
+
+Removes a specific callback for `url`. Pass `'*'` (or omit the second argument, which defaults to `'*'`) to remove all callbacks for that route.
+
+### Events
+
+| Event | Dispatched on | `detail` |
+|---|---|---|
+| `routechange` | `window` | `{ from, to }` |
+| `routererror` | `window` | `{ message, url }` — fired when no route matches |
+
+<Note>
+  When no registered route matches the current URL, `route` automatically navigates to `'/' + route.notFoundPage`. The default value of `notFoundPage` is `'404'`, so you should register a `/404` handler.
+</Note>
+
+### Full example
+
+```js
+tf.init();
+
+route.init('/');
+
+// Static routes
+route.when('/', () => renderHome());
+route.when('/about', () => renderAbout());
+
+// Named parameter
+route.when('/users/:id', ({ id }) => renderUser(id));
+
+// Nested named parameters
+route.when('/users/:id/profile', ({ id }) => renderProfile(id));
+
+// Wildcard
+route.when('/files/*', ({ _wildcard }) => renderFile(_wildcard));
+
+// 404 fallback
+route.when('/404', () => render404());
+
+// Auth guard — block /admin, redirect /dashboard to /login
+route.guard((to, from, cancel, redirect) => {
+  if (to.startsWith('/admin') && !isLoggedIn) {
+    cancel();
+    return;
+  }
+  if (to === '/dashboard' && !isLoggedIn) {
+    redirect('/login');
+  }
+});
+
+// Programmatic navigation
+route.go('/users/42');    // absolute
+route.go('../');          // one level up from the current path
+
+// Listen for navigation events
+window.addEventListener('routechange', (e) => {
+  console.log('Navigated from', e.detail.from, 'to', e.detail.to);
+});
+
+window.addEventListener('routererror', (e) => {
+  console.error('No route matched:', e.detail.url);
+});
+```

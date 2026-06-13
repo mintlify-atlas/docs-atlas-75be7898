@@ -1,0 +1,135 @@
+---
+title: "Install WyvernJS via npm or CDN"
+sidebarTitle: "Installation"
+description: "Add WyvernJS to your project using npm, ES module imports from jsDelivr, or classic script tags — no build step required."
+---
+
+WyvernJS supports three install methods — npm for Node.js and bundler environments, ES module CDN imports for modern browsers using native `import` syntax, and classic `<script>` tags for zero-setup browser usage with no build step whatsoever. All three methods expose the same `dw`, `tf`, `fw`, and `sh` globals or named exports, so you can swap between them without changing application code.
+
+## Install
+
+<Tabs>
+  <Tab title="npm">
+    Install the package from npm. This gives you access to all four modules through the package's named exports map.
+
+    <CodeGroup>
+      ```bash npm
+      npm install @mchen_dragon/wyvernjs
+      ```
+
+      ```bash yarn
+      yarn add @mchen_dragon/wyvernjs
+      ```
+
+      ```bash pnpm
+      pnpm add @mchen_dragon/wyvernjs
+      ```
+    </CodeGroup>
+
+    After installing, import the full bundle or individual modules by their export path (see [Package Exports](#package-exports) below).
+
+    ```js
+    // Full bundle — all four modules
+    import { dw, diwu, tf, tianfeng, fw, firewyrm, sh, shuihu } from '@mchen_dragon/wyvernjs';
+
+    // Individual modules
+    import { dw, diwu } from '@mchen_dragon/wyvernjs/diwu';
+    import { tf, tianfeng } from '@mchen_dragon/wyvernjs/tianfeng';
+    import { fw, firewyrm } from '@mchen_dragon/wyvernjs/firewyrm';
+    import { sh, shuihu } from '@mchen_dragon/wyvernjs/shuihu';
+    ```
+  </Tab>
+
+  <Tab title="CDN Script Tags">
+    Drop one or more `<script>` tags into your HTML and WyvernJS registers itself on `window` automatically — no imports, no bundler, no config.
+
+    ```html
+    <!-- Individual modules — load only what you need -->
+    <script src="https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/diwu.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/tianfeng.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/firewyrm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/shuihu.js"></script>
+
+    <!-- Or load all four at once -->
+    <script src="https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/wyvern.js"></script>
+    ```
+
+    After the script loads, `dw`, `tf`, `fw`, and `sh` (and their long-form aliases `diwu`, `tianfeng`, `firewyrm`, `shuihu`) are available as globals on `window`.
+  </Tab>
+
+  <Tab title="ES Module Imports">
+    Use native ES module `import` syntax to pull from the jsDelivr CDN directly — no npm install needed, and tree-shaking applies at the browser level.
+
+    ```js
+    // Individual modules
+    import { dw, diwu }         from 'https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/diwu.js';
+    import { tf, tianfeng }     from 'https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/tianfeng.js';
+    import { fw, firewyrm }     from 'https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/firewyrm.js';
+    import { sh, shuihu }       from 'https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/shuihu.js';
+
+    // All at once from the combined bundle
+    import { dw, diwu, tf, tianfeng, fw, firewyrm, sh, shuihu }
+      from 'https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/wyvern.js';
+    ```
+
+    Each named export comes in both a short alias (`dw`) and a full-name alias (`diwu`) — they are identical references.
+  </Tab>
+</Tabs>
+
+## Package Exports
+
+When using npm, the `exports` field in `package.json` maps the following import paths to their source files:
+
+| Import path | File |
+|---|---|
+| `@mchen_dragon/wyvernjs` | `main/wyvern.js` (all four modules combined) |
+| `@mchen_dragon/wyvernjs/firewyrm` | `main/firewyrm.js` |
+| `@mchen_dragon/wyvernjs/shuihu` | `main/shuihu.js` |
+| `@mchen_dragon/wyvernjs/diwu` | `main/diwu.js` |
+| `@mchen_dragon/wyvernjs/tianfeng` | `main/tianfeng.js` |
+
+<Note>
+  The `package.json` `main` field points to `main/wyvern.js`, so a bare `require('@mchen_dragon/wyvernjs')` in CommonJS environments loads the full bundle.
+</Note>
+
+## Initialization
+
+Importing or loading WyvernJS does **not** automatically activate all features. **DiWu** and **TianFeng** must be initialized before use. FireWyrm (`fw`) and ShuiHu (`sh`) are ready immediately — no init call required.
+
+```js
+// Initialize DiWu — extends DOM prototypes with chainable methods
+dw.init();
+```
+
+`dw.init()` accepts an optional params object. Pass `false` for any key to suppress that prototype addition:
+
+```js
+// Disable the .on(), .off(), and .once() event shorthands
+dw.init({ on: false, off: false, once: false });
+
+// Force-override an already-existing prototype method (use with care)
+dw.init({ css: 'force' });
+```
+
+```js
+// Initialize TianFeng — populates a context object with helpers
+tf.init();
+```
+
+`tf.init(context, options)` accepts two optional arguments:
+
+- **`context`** — defaults to `window`. Pass `tf` itself (or any plain object) to avoid touching `window` at all:
+  ```js
+  tf.init(tf); // all helpers land on tf instead of window
+  // access as: tf.tree(), tf.route, tf.createStore(), etc.
+  ```
+- **`options`** — an object of feature flags. Every feature is `true` by default; set a key to `false` to disable it:
+  ```js
+  tf.init(window, { bodyInWindow: false }); // don't expose `body` on window
+  tf.init(window, { route: false });        // skip the hash router
+  tf.init(window, { device: false });       // skip device detection object
+  ```
+
+<Note>
+  Only browsers have been officially tested. Non-DOM TianFeng features (stores, async helpers, `throttle`, `safeParse`, `setTask`, etc.) and all of FireWyrm are expected to work on ES9+ Node.js, but this has not been formally verified. DiWu is browser-only and should not be initialized in a non-browser environment.
+</Note>

@@ -1,0 +1,112 @@
+---
+title: "DOM Helpers and Tree Builder in TianFeng"
+sidebarTitle: "DOM Helpers"
+description: "TianFeng provides a jQuery-like $() selector, a JSX-style tree() builder, localStorage persistence proxy, and URL query parameter proxy."
+---
+
+TianFeng adds several DOM-facing utilities to your context — a smart `$()` selector, a JSX-style `tree()` array builder for constructing DOM trees declaratively, a `persist` proxy for localStorage, and a `query` proxy for URL search params.
+
+## `$(selector)` <sup>option: `selector`</sup>
+
+A single function that covers the three most common DOM lookup patterns. If the selector string ends with `+`, it calls `document.querySelectorAll` on the trimmed selector and returns a `NodeList`. Otherwise it first tries `document.getElementById` and falls back to `document.querySelector`, so bare IDs work without the `#` prefix.
+
+```js
+const app  = $('app');     // document.getElementById('app')
+const btn  = $('.btn');    // document.querySelector('.btn')
+const all  = $('.item+');  // document.querySelectorAll('.item')
+```
+
+## `body` <sup>option: `bodyInWindow`</sup>
+
+Exposes `window.document.body` directly as `body` on the context object, saving you the full qualification every time.
+
+```js
+body.appendChild(myElement);
+```
+
+## `persist` <sup>option: `persist`</sup>
+
+A `Proxy` over `localStorage` that serializes values to JSON on write and deserializes them on read. Assign any serializable value and it will survive page reloads with no manual `JSON.stringify` / `JSON.parse` calls.
+
+```js
+persist.theme = 'dark';                          // saved to localStorage as JSON
+console.log(persist.theme);                      // 'dark' — survives page reloads
+persist.count = (persist.count || 0) + 1;        // incrementing a persisted counter
+```
+
+## `query` and `urlQuery` <sup>option: `query`</sup>
+
+`urlQuery` is a raw `URLSearchParams` instance built from the current `window.location.search`.
+
+`query` is a `Proxy` on top of `urlQuery`. Getting a key reads the current search param; setting a key writes it back and calls `history.replaceState` so the URL bar updates without a page reload. Setting a key to `undefined` removes the parameter entirely.
+
+```js
+console.log(query.page);  // reads ?page=... from the URL
+query.page = 2;            // updates the URL to ?page=2
+query.page = undefined;    // removes ?page from the URL
+```
+
+## `tree(definition, parent?, postProcess?)` <sup>option: `tree`</sup>
+
+A JSX alternative that builds real DOM nodes from nested arrays. Each node is described as `[tag, props, children]`:
+
+- **`tag`** — a string tag name (`'div'`, `'button'`, …) or a component function.
+- **`props`** — a plain object of attributes and special keys (see below).
+- **`children`** — an array of strings, existing `Node` instances, or further `[tag, props, children]` triples.
+
+**Special prop keys:**
+
+| Key | Behavior |
+|---|---|
+| `text` | Sets `element.innerText` |
+| `html` | Sets `element.innerHTML` |
+| `on*` (function) | Attaches an event listener — e.g. `onclick`, `oninput` |
+| any other key | Passed to `element.setAttribute` |
+
+When `parent` is provided, every top-level element is appended to it immediately. `tree()` always returns the array of created elements.
+
+```js
+// Build a card and append it to body
+const [card] = tree([
+  ['div', { class: 'card' }, [
+    ['h2', { text: 'Title' }    , []],
+    ['p',  {},                    ['Some description']],
+    ['button', { onclick: () => alert('hi') }, ['Click me']]
+  ]]
+]);
+body.appendChild(card);
+
+// Pass a parent directly — no need to capture the return value
+tree([
+  ['ul', {}, [
+    ['li', {}, ['First']],
+    ['li', {}, ['Second']]
+  ]]
+], body);
+```
+
+**Component functions** receive `(props, children)` and must return a single `[tag, props, children]` triple, an array of such triples, or a `Node`:
+
+```js
+function Card({ title }, children) {
+  return ['div', { class: 'card' }, [
+    ['h3', {}, [title]],
+    ...children
+  ]];
+}
+
+tree([Card, { title: 'Hello' }, [['p', {}, ['World']]]], body);
+```
+
+<Note>
+  Adding `_plain: true` to a component's props switches child resolution from React-style (children are pre-built into DOM nodes before being passed in) to Vue-style (the raw `[tag, props, children]` definition arrays are passed through unprocessed, letting the component call `tree()` on them itself).
+</Note>
+
+## `safeParse(json)` <sup>option: `safeJSON`</sup>
+
+A wrapper around `JSON.parse` with built-in error handling. Returns the parsed value on success, or the string `'[Unparseable JSON]'` if parsing fails — so you never need a bare try/catch for JSON.
+
+```js
+const data = safeParse(rawString);
+// On bad input: '[Unparseable JSON]' — no uncaught exception
+```

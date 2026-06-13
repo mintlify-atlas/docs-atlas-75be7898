@@ -1,0 +1,150 @@
+---
+title: "Async Utilities and Task Scheduling in TianFeng"
+sidebarTitle: "Async"
+description: "TianFeng provides setTask (a better setInterval), throttle with leading/trailing control, wait/retry helpers, and fetch wrappers for cleaner async code."
+---
+
+TianFeng adds a collection of async and scheduling utilities that address common pain points: `setTask` replaces `setInterval` with self-cancellation and external control, `throttle` supports both leading and trailing calls with separate opt-in flags, and several `wait*` helpers make promise-based delays readable. Fetch wrappers eliminate the usual try/catch boilerplate around `response.ok` checks.
+
+## `setTask`, `clearTask`, and `changeTask` <sup>option: `setTask`</sup>
+
+`setTask` is a `setInterval` replacement built on chained `setTimeout` calls. It returns a `Symbol` id that can be passed to `clearTask` or `changeTask`.
+
+```js
+setTask(fn, delay?, args?, iterations?)
+```
+
+| Parameter | Default | Description |
+|---|---|---|
+| `fn` | — | Callback to run. Called with `this` bound to a `control` object. |
+| `delay` | `0` | Milliseconds between executions. |
+| `args` | `[]` | Array of arguments forwarded to `fn`. |
+| `iterations` | `Infinity` | Maximum number of executions before the task stops itself. |
+
+Inside the callback, `this` (the `control` object) exposes a `stop()` method so the task can cancel itself without needing an external reference to its id:
+
+```js
+const id = setTask(function() {
+  console.log('tick');
+  if (someCondition) this.stop(); // self-cancel via the control object
+}, 1000);
+
+clearTask(id);                    // cancel from outside
+changeTask(id, { delay: 2000 }); // change the interval delay
+```
+
+<Note>
+  `changeTask` currently accepts only a `delay` key in its options object. The change takes effect on the next scheduled execution.
+</Note>
+
+## `throttle(fn, delay?, options?)` <sup>option: `throttle`</sup>
+
+Returns a throttled version of `fn`. Both the leading edge (first call in a quiet period) and the trailing edge (last call during a busy period) are independently configurable.
+
+| Parameter | Default | Description |
+|---|---|---|
+| `delay` | `10` | Throttle window in milliseconds. |
+| `options.leading` | `true` | Fire on the leading edge of the window. |
+| `options.trailing` | `true` | Fire on the trailing edge of the window. |
+
+```js
+// Default: leading + trailing
+window.addEventListener('scroll', throttle(handleScroll, 100));
+
+// Leading-only — fires immediately, ignores trailing calls
+const leadingOnly = throttle(fn, 200, { trailing: false });
+
+// Trailing-only — useful for search-as-you-type debounce-like behavior
+const trailingOnly = throttle(fn, 300, { leading: false, trailing: true });
+```
+
+The weather app example uses trailing-only throttle on its search input to avoid firing a geocode request on every keystroke:
+
+```js
+input.addEventListener('keyup', throttle((ev) => {
+  renderSearch(ev.target.value);
+}, 1200, { leading: false, trailing: true }));
+```
+
+## Fetch helpers <sup>option: `fetchhelp`</sup>
+
+Three wrappers around the native `fetch` API. All three throw on non-`ok` responses so you can use a single `try/catch` instead of manually checking `response.ok`.
+
+| Function | Returns |
+|---|---|
+| `fetchJson(url, ops?)` | Parsed JSON (`response.json()`) |
+| `fetchText(url, ops?)` | Raw text (`response.text()`) |
+| `fetchFresh(url, ops?)` | Raw text with a `refresh=<timestamp>` cache-busting query param appended |
+
+```js
+const data  = await fetchJson('https://api.example.com/items');
+const html  = await fetchText('/template.html');
+const fresh = await fetchFresh('/config.json'); // URL becomes /config.json?refresh=1718000000000
+```
+
+`ops` is passed directly to the underlying `fetch` call and accepts any standard `RequestInit` options (method, headers, body, etc.).
+
+## Async helpers <sup>option: `async`</sup>
+
+Six utilities for common async patterns:
+
+### `wait(ms)`
+
+Returns a `Promise` that resolves after `ms` milliseconds.
+
+### `waitUntil(targetTime)`
+
+Waits until a specific `Date` object or Unix timestamp (number). Resolves immediately if the target is already in the past.
+
+### `waitFrame()`
+
+Resolves after the current call stack clears via `setTimeout(0)`. Useful for yielding to the browser's rendering pipeline before reading layout values or triggering transitions.
+
+### `retry(action, options?)`
+
+Calls a promise-returning `action` function up to `retries` times with exponential backoff between attempts.
+
+| Option | Default | Description |
+|---|---|---|
+| `retries` | `3` | Maximum number of retry attempts after the first failure. |
+| `delay` | `1000` | Base delay in ms between retries. |
+| `backoff` | `2` | Backoff multiplier — wait time doubles each attempt by default. |
+| `shouldRetry` | `() => true` | Predicate receiving the error; return `false` to stop retrying early. |
+
+### `parallel(tasks, options?)`
+
+Runs an array of zero-argument task functions concurrently, respecting a concurrency cap. Returns a `Promise` resolving to the array of results in original order.
+
+| Option | Default | Description |
+|---|---|---|
+| `concurrency` | `5` | Maximum number of tasks running at the same time. |
+
+### `sequence(tasks)`
+
+Runs an array of zero-argument task functions one after another, collecting each result. Returns a `Promise` resolving to an array of results in order.
+
+```js
+await wait(500);
+await waitUntil(new Date('2025-01-01'));
+await waitFrame();
+
+// Retry a flaky endpoint up to 3 times with exponential backoff
+const result = await retry(() => fetchJson('/flaky-api'), {
+  retries: 3,
+  delay: 500,
+  backoff: 2
+});
+
+// Fetch three resources with at most 2 in-flight at once
+const results = await parallel([
+  () => fetchJson('/a'),
+  () => fetchJson('/b'),
+  () => fetchJson('/c')
+], { concurrency: 2 });
+
+// Run steps in strict order
+const ordered = await sequence([
+  () => step1(),
+  () => step2()
+]);
+```

@@ -1,47 +1,152 @@
 ---
-title: "Quickstart"
-description: "Begin with a guide on the fastest path to a successful outcome"
+title: "Get Started with WyvernJS in 5 Minutes"
+sidebarTitle: "Quickstart"
+description: "Initialize WyvernJS, manipulate the DOM with DiWu, run your first test with FireWyrm, and log a benchmark with ShuiHu in under five minutes."
 ---
 
-Describe how someone begins using your product. What is the first thing they need to do? Are there any prerequisites?
-
-A quickstart should take someone from zero to using your product. They'll get a quick win and a sense of what they can accomplish.
-
-## Prerequisites
-
-Before you begin, you must have:
-
-- Requirement one (for example, Node.js 18+, a free account, an API key)
-- Requirement two (for example, a compatible device, a compatible browser, a compatible operating system)
-
-## Get started
+This page walks you through a complete working example using all four WyvernJS modules in a browser environment. By the end, you will have a page that renders a UI with TianFeng's `tree()`, manipulates DOM elements with DiWu's chainable methods, runs an async test suite with FireWyrm, and captures a performance benchmark with ShuiHu — all with zero dependencies and no build step.
 
 <Steps>
-  <Step title="Install">
-    Describe how to install your product or sign up.
+  <Step title="Add WyvernJS to your page">
+    The fastest way to get started is a single CDN script tag that loads all four modules at once. Add it to the `<head>` or just before the closing `</body>` tag of your HTML file:
 
-    ```bash
-    npm install your-package
+    ```html
+    <script src="https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/wyvern.js"></script>
+    ```
+
+    This registers `dw`, `tf`, `fw`, `sh` (and their long-form aliases) as globals on `window`. No bundler, no npm install, no further configuration needed.
+  </Step>
+
+  <Step title="Initialize the modules">
+    DiWu and TianFeng must be initialized before their features are available. Add the following in your own `<script>` block, after the WyvernJS script tag:
+
+    ```js
+    dw.init();  // extends DOM prototypes with chainable methods and Proxy properties
+    tf.init();  // populates window with helpers: tree, route, createStore, wait, device, etc.
+    ```
+
+    FireWyrm (`fw`) and ShuiHu (`sh`) require no init call — they are ready to use immediately.
+  </Step>
+
+  <Step title="Manipulate the DOM with DiWu">
+    After `dw.init()`, every DOM element gains chainable methods and Proxy-based property accessors. Here is a taste of what is now available on any element:
+
+    ```js
+    // Chainable styling, content, and event binding in one expression
+    document.querySelector('#app')
+      .css({ backgroundColor: '#1c3c44', padding: '20px', borderRadius: '8px' })
+      .text('Hello from WyvernJS')
+      .on('click', () => sh.log('App clicked'));
+
+    // Proxy-based class toggling — reads and writes feel like plain object properties
+    const btn = document.querySelector('#btn');
+    btn.classes.active = true;   // adds the 'active' class
+    btn.classes.active = false;  // removes the 'active' class
+    console.log(btn.classes.active); // → false
+
+    // Proxy-based attribute access
+    btn.attrs['data-id'] = '42';          // sets attribute
+    console.log(btn.attrs['data-id']);    // → '42'
+
+    // Visibility shortcuts
+    btn.hide();       // stores original display value, sets display:none
+    btn.show();       // restores original display value
+    btn.toggle();     // flips between hidden and visible
+
+    // Animate to a final CSS state using the Web Animations API
+    btn.animateTo({ opacity: '0', transform: 'translateY(-10px)' }, 300);
     ```
   </Step>
-  <Step title="Configure">
-    Describe any setup or configuration needed before first use.
 
-    ```bash
-    your-cli init
+  <Step title="Build UI with TianFeng tree()">
+    After `tf.init()`, `tree()` and `body` are available on `window`. `tree()` is a JSX-like array syntax that creates real DOM nodes without any transpiler:
+
+    ```js
+    // tree() accepts nested arrays of [tag, props, children]
+    // prop keys starting with 'on' become event listeners automatically
+    body.append(tree([
+      ['div', { style: 'text-align:center' }, [
+        ['h1', {}, ['WyvernJS Demo']],
+        ['p',  {}, ['Zero-dependency vanilla JS tools']],
+        ['button', { id: 'runTests', onclick: runTests }, ['Run Tests']]
+      ]]
+    ])[0]);
     ```
+
+    `tree()` returns an array of the top-level DOM nodes it created. `[0]` grabs the first (and only) root element, which is then appended directly to `body`.
+
+    <Tip>
+      You can pass a second argument to `tree()` to have it append the created elements to a parent automatically: `tree(definition, body)` — no manual `append` call needed.
+    </Tip>
   </Step>
-  <Step title="Run it">
-    Show the first thing a user does to see it working.
 
-    ```bash
-    your-cli start
+  <Step title="Write tests with FireWyrm">
+    FireWyrm (`fw`) runs tests asynchronously in a sequential queue. Start a suite with `fw.start()`, group tests into sections, assert values with chainable matchers, and close with `fw.end()`:
+
+    ```js
+    function runTests() {
+      fw.start();
+
+      // fw.section() groups tests in the console output
+      fw.section('Math');
+      fw.assert('Addition works',       () => 1 + 1).is(2);
+      fw.assert('Multiplication works', () => 3 * 4).is(12);
+
+      // fw.test() accepts sync or async functions — return true to pass
+      fw.section('Async');
+      fw.test('Wait resolves', async () => {
+        await wait(50); // wait() is provided by tf.init()
+        return true;
+      });
+
+      // fw.assert() has 25+ chainable matchers
+      fw.section('Type checks');
+      fw.assert('Result is a number', () => 3 * 4).isNumber();
+      fw.assert('Array is not empty',  () => [1, 2, 3]).isEmpty().isFalsey; // negation example
+
+      fw.end(); // flushes remaining sections and prints final results
+    }
     ```
+
+    Results are printed to the console with ✅/❌ per test and a summary per section.
+  </Step>
+
+  <Step title="Log and benchmark with ShuiHu">
+    ShuiHu (`sh`) provides structured logging with four severity levels and a step-based benchmark timer built on `performance.now()`:
+
+    ```js
+    // Logging — all calls are stored in an in-memory history
+    sh.log('App initialized');                        // level: debug
+    sh.warn('This is a warning', { context: 'startup' }); // level: warn
+
+    // Benchmarking — use any label as a dynamic property on sh.time
+    sh.time.render.start();
+    for (let i = 0; i < 20; i++) {
+      // ... do some work ...
+      sh.time.render.step(i); // records delta time and a numeric flag
+    }
+    sh.time.render.stop(); // logs the full benchmark report
+
+    // Retrieve filtered log history — returns an array of { msg, label, context }
+    const logs = sh.outputLogs('warn'); // only 'warn', 'error', and 'dire' entries
+    console.table(logs);
+    ```
+
+    The `sh.time` proxy accepts **any** label — `sh.time.myFunction.start()`, `sh.time.apiCall.start()`, etc. Each benchmark is tracked independently and removed from memory on `.stop()` or `.cancel()`.
   </Step>
 </Steps>
 
 <Tip>
-  Give people a way to get help. This could be a link to a support page, a chat with a customer support agent, or a forum for your product.
-
-  Example: Need help? Reach out to us at [support@yourcompany.com](mailto:support@yourcompany.com).
+  Each module is fully independent. For a minimal setup, import and initialize only what you need. For example, a pure logging setup requires only the ShuiHu script tag — no `init()` call, just `sh.log()` straight away.
 </Tip>
+
+## Next Steps
+
+<CardGroup cols={2}>
+  <Card title="DiWu Overview" icon="layer-group" href="/diwu/overview">
+    Deep-dive into every DOM method, event helper, animation, and Proxy property that DiWu adds.
+  </Card>
+  <Card title="TianFeng Overview" icon="wrench" href="/tianfeng/overview">
+    Explore the full TianFeng toolkit: routing, stores, fetch helpers, device detection, and more.
+  </Card>
+</CardGroup>

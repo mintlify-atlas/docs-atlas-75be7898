@@ -1,0 +1,127 @@
+---
+title: "Logging, Log History, and DOM Output in ShuiHu"
+sidebarTitle: "Logging"
+description: "ShuiHu stores all log entries in memory with timestamps and severity labels, and can render them into the DOM with createLogHolder() and outputElementLogs()."
+---
+
+Every call to a ShuiHu log method — `log`, `debug`, `warn`, `error`, or `dire` — records a `{ statement, context, label, timestamp }` entry in an internal array and routes output to `console.log`, `console.warn`, or `console.error` depending on severity. The timestamp is formatted as `HH:MM;SS.ms` using the local clock at the moment the log is recorded.
+
+## Log methods
+
+All log methods accept `(statement, context?)` where `statement` is the message string and `context` is any optional value you want to attach to the entry (an object, number, string, etc.).
+
+| Method | Severity level | Console method |
+|--------|---------------|----------------|
+| `sh.debug(s, ctx?)` | 0 | `console.log` |
+| `sh.log(s, ctx?)` | 0 (alias for `debug`) | `console.log` |
+| `sh.warn(s, ctx?)` | 1 | `console.warn` |
+| `sh.error(s, ctx?)` | 2 | `console.error` |
+| `sh.dire(s, ctx?)` | 3 | `console.error` |
+
+```js
+sh.log('App started');
+sh.warn('Deprecated API used', { method: 'fetchJson', line: 42 });
+sh.error('Request failed', { status: 500, url: '/api/data' });
+sh.dire('Critical: out of memory');
+```
+
+## `sh.outputLogs(label?, serialize?, lastAmount?)`
+
+Returns the filtered log history as an array of `{ msg, label, context }` objects. Entries are filtered to those whose severity level is **greater than or equal to** the requested `label`.
+
+- `label` — minimum severity label to include. Defaults to `'debug'` (returns everything).
+- `serialize` — if `true` (default), the `context` field of each entry is JSON-stringified via a safe serializer that returns `'[Unserializable object]'` on failure.
+- `lastAmount` — return only the last N entries. Defaults to `Infinity` (all matching entries).
+
+```js
+const allLogs  = sh.outputLogs();                   // everything, contexts serialized
+const warnings = sh.outputLogs('warn');             // warn + error + dire only
+const last50   = sh.outputLogs('debug', true, 50);  // last 50 entries, serialized
+const rawCtx   = sh.outputLogs('error', false);     // error + dire, raw context objects
+```
+
+Each returned object has the shape:
+
+```js
+{
+  msg:     '[warn] Cache miss',   // "[label] statement"
+  label:   'warn',                // the log label string
+  context: '{"key":"user:42"}'    // JSON string if serialize=true, else raw value
+}
+```
+
+## `sh.setUpdateFn(fn)`
+
+Registers a callback that fires every time a new log entry is recorded. The callback receives no arguments — call `sh.outputLogs()` inside it to retrieve the latest state. Useful for keeping a live log panel in sync:
+
+```js
+sh.setUpdateFn(() => {
+  const logs = sh.outputLogs('warn', false);
+  renderLogPanel(logs);
+});
+```
+
+Only one update function is active at a time. Calling `setUpdateFn` again replaces the previous one.
+
+## `sh.clear()`
+
+Clears all entries from the in-memory log history. Does not affect the DOM or the registered update function.
+
+```js
+sh.clear();
+```
+
+## DOM output (browser only)
+
+### `sh.createLogHolder(parent?)`
+
+Creates a fixed-position `div.logholder` overlay anchored to the bottom-left of the screen — 20vw wide, full viewport height, with a semi-transparent black background. The element is appended to `parent`, which defaults to `document.body`.
+
+```js
+sh.createLogHolder();                          // appends to document.body
+sh.createLogHolder(document.getElementById('debug-panel')); // custom parent
+```
+
+### `sh.outputElementLogs(label?, lastAmount?)`
+
+Returns an array of `div.log` DOM elements, one per matching log entry. Each element is assigned the CSS classes `log` and `l0`–`l3` based on severity level, and its text content is set to the log message plus a formatted context string. `lastAmount` defaults to `100`.
+
+This method calls DiWu's `.text()` and `.setClasses()` extension methods on DOM elements internally.
+
+```js
+// Create the overlay
+sh.createLogHolder();
+
+// Refresh it on every new log
+sh.setUpdateFn(() => {
+  const holder = document.querySelector('.logholder');
+  holder.empty(); // requires DiWu
+  sh.outputElementLogs('debug', 100).forEach(el => holder.appendChild(el));
+});
+```
+
+### Suggested CSS
+
+Apply these styles to give the log overlay readable formatting with severity-level colour coding:
+
+```css
+div.logholder {
+  font-size: 0px;
+}
+div.log {
+  border-bottom: 1px solid grey;
+  display: inline-block;
+  font-size: 13px;
+  font-family: monospace;
+  color: white;
+}
+div.l1 { background-color: rgba(120, 120, 0, 0.2); }  /* warn */
+div.l2 { background-color: rgba(200, 80, 0, 0.2); }   /* error */
+div.l3 { background-color: rgba(255, 0, 0, 0.4); }    /* dire */
+```
+
+`l0` (debug) has no background, so debug entries blend into the overlay's base background. `l1`–`l3` use progressively more intense warning colours.
+
+<Note>
+  `outputElementLogs` calls DiWu's `.text()` and `.setClasses()` methods on DOM elements. Make sure `dw.init()` has been called before using it, otherwise these methods will not exist on element instances and the call will throw.
+</Note>

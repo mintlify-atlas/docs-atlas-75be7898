@@ -1,0 +1,111 @@
+---
+title: "Step-Based Performance Benchmarking in ShuiHu"
+sidebarTitle: "Benchmarking"
+description: "sh.time is a Proxy-based benchmark system that records start time, flagged step timestamps, and total duration using Uint32Array for near-zero overhead."
+---
+
+ShuiHu's `sh.time` object is a `Proxy` that creates benchmark timers on demand — no setup required beyond accessing a property name. Each timer records a start time via `performance.now()`, up to 500 step measurements stored as flag+timestamp pairs in a `Uint32Array` (1000 slots, 2 per step), and a stop time. Total overhead is approximately 0.06ms per timer, making it suitable for profiling hot paths without significantly skewing results.
+
+## API
+
+All benchmark methods are accessed via `sh.time.<label>.<method>()`. The `<label>` is any valid JavaScript property name and uniquely identifies the running benchmark.
+
+### `sh.time.<label>.start()`
+
+Starts the benchmark timer. Records `performance.now()` (rounded to one decimal place) as the start time and registers the benchmark under `<label>` in internal storage.
+
+Calls `sh.error()` and returns `null` if a benchmark with the same label is already running. Always pair each `start()` with a `stop()` or `cancel()`.
+
+```js
+sh.time.loadData.start();
+```
+
+### `sh.time.<label>.step(flag)`
+
+Records a step checkpoint relative to the benchmark's start time. `flag` must be a **number** — it acts as a named identifier in the output (for example, a loop index, phase number, or operation code). Each step stores two values in the `Uint32Array`: the elapsed time and the flag.
+
+Calls `sh.error()` and returns `null` if:
+- `flag` is not a number.
+- The benchmark does not exist (i.e. `start()` was not called).
+- The step count would exceed 500 (internal index > 998).
+
+```js
+sh.time.renderLoop.step(0);  // flag 0 at this point in time
+sh.time.renderLoop.step(42); // flag 42 — e.g. an iteration index
+```
+
+### `sh.time.<label>.stop()`
+
+Stops the benchmark, assembles a formatted report string, logs it via `sh.log` under the `'benchmark'` label, and deletes the benchmark from memory.
+
+Calls `sh.error()` and returns `null` if the benchmark does not exist.
+
+```js
+sh.time.loadData.stop();
+```
+
+### `sh.time.<label>.cancel()`
+
+Removes the benchmark from memory without logging any output. Use this when you want to abort timing without emitting a report.
+
+Calls `sh.error()` and returns `null` if the benchmark does not exist.
+
+```js
+sh.time.experiment.cancel();
+```
+
+## Output format
+
+When `stop()` is called, ShuiHu logs a report with the `'benchmark'` label. Each step line is numbered (1-based) and prefixed with `f` followed by the flag value:
+
+```
+benchmark: myLabel
+Start: 12.3
+End: 45.6
+Diff: 33.3
+Steps:
+1 f0: 5.2
+2 f1: 12.4
+...
+```
+
+- **Start** / **End** — absolute `performance.now()` values in milliseconds, rounded to one decimal place.
+- **Diff** — total elapsed time (`End - Start`).
+- **Steps** — each step's elapsed time since `Start`, paired with its flag value.
+
+## Examples
+
+```js
+// Basic benchmark — no steps
+sh.time.loadData.start();
+const data = await fetchJson('/api/data');
+sh.time.loadData.stop();
+```
+
+```js
+// With step flags to trace a render loop
+sh.time.renderLoop.start();
+for (let i = 0; i < items.length; i++) {
+  renderItem(items[i]);
+  sh.time.renderLoop.step(i); // flag is the iteration index
+}
+sh.time.renderLoop.stop();
+```
+
+```js
+// Cancel a benchmark when an early exit occurs
+sh.time.experiment.start();
+if (earlyExit) {
+  sh.time.experiment.cancel(); // no output emitted
+} else {
+  sh.time.experiment.stop();
+}
+```
+
+<Tip>
+  Use step flags as meaningful identifiers — for example, use the index in a loop, a phase number, or an operation code — so you can correlate each step line in the log output to a specific iteration or stage when reading the benchmark report.
+</Tip>
+
+<Warning>
+  Each benchmark supports a maximum of **500 steps**. Attempting to record a step when the internal index exceeds 998 (i.e. a 501st step) will trigger `sh.error()` and the step will not be recorded. If you need to profile loops longer than 500 iterations, consider sampling — for example, only calling `step()` every N iterations.
+</Warning>

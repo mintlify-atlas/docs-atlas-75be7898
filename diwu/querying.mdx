@@ -1,0 +1,59 @@
+---
+title: "DOM Querying and CSS Helpers in DiWu"
+sidebarTitle: "Querying"
+description: "DiWu adds .qs(), .qsa(), and .$() as shorthand query selectors on Element, Document, and DocumentFragment, plus .css() for inline style application."
+---
+
+DiWu adds three query selector shorthands to `Element`, `Document`, and `DocumentFragment` prototypes simultaneously, making it possible to scope queries to any element without calling the full `querySelector` family by name. The `css()` method, also on `Element.prototype`, accepts a plain style object and applies each property directly to `el.style` — keeping style changes readable and chainable alongside the rest of DiWu's API.
+
+## `el.qs(selector)`
+
+Wraps `querySelector`. Returns the first descendant element that matches `selector`, or `null` if none is found.
+
+```js
+const nav = document.qs('nav');
+const link = nav.qs('.active-link');
+```
+
+## `el.qsa(selector)`
+
+Wraps `querySelectorAll`. Returns a `NodeList` of all matching descendant elements.
+
+```js
+const items = document.qsa('.list-item');
+items.forEach(el => el.css({ color: 'blue' }));
+```
+
+## `el.$(selector)`
+
+Wraps `getElementById`. Returns the element whose `id` attribute matches `selector`, or `null` if none exists. Because `getElementById` is scoped to `document`, this is effectively a document-level lookup regardless of which element it is called on.
+
+```js
+const header = document.$('main-header');
+```
+
+## `el.css(styles)`
+
+Accepts a plain object of CSS property/value pairs and sets each one on `el.style`. Property names follow the JavaScript camelCase convention (e.g. `fontSize`, not `font-size`). Available on `Element.prototype`. Returns `this`.
+
+```js
+el.css({ fontSize: '18px', fontWeight: 'bold', marginTop: '8px' });
+```
+
+## Multi-prototype registration
+
+`qs`, `qsa`, and `$` are special in that DiWu registers them on three prototypes at once: `Element.prototype`, `Document.prototype`, and `DocumentFragment.prototype`. This means the shorthands work whether you are querying from a detached fragment, a live document, or any element already in the tree.
+
+## Init params for querying
+
+Any of the querying methods can be excluded from prototype registration at init time:
+
+```js
+dw.init({ qs: false, qsa: false, $: false });
+```
+
+Pass `'force'` instead of `false` to override an existing definition on any of the three target prototypes:
+
+```js
+dw.init({ qs: 'force' });
+```

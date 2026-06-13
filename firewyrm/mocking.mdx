@@ -1,0 +1,88 @@
+---
+title: "Mocking Object Methods with FireWyrm"
+sidebarTitle: "Mocking"
+description: "fw.mock() replaces any object property with a stub function for testing, and fw.mock.restore() reverts all replacements when the test run is done."
+---
+
+FireWyrm provides lightweight object method mocking via `fw.mock()`. It replaces a named property on any object with a stub function, records the original value internally, and lets you restore everything in one call when the tests are finished. Mocking is useful for intercepting network calls, neutralising side-effectful functions like `console.log`, or making timers and other browser APIs behave predictably during a test run — all without any external library.
+
+---
+
+## `fw.mock(fn)`
+
+Creates a mock descriptor. `fn` is the replacement function to install. If `fn` is omitted, a no-op (`() => {}`) is used.
+
+Returns an object with a single method: **`.replace(obj, prop)`**.
+
+### `.replace(obj, prop)`
+
+Swaps `obj[prop]` for the stub function supplied to `fw.mock()`. The original value is saved so it can be restored later. Returns the internal mock record (not `fw`) — further chaining is not typical here.
+
+```js
+// Replace window.fetchJson with a stub that resolves immediately
+fw.mock(() => Promise.resolve({ data: 1 })).replace(window, 'fetchJson');
+
+// Silence console.log during a noisy test (no-op replacement)
+fw.mock().replace(console, 'log');
+
+// Replace with a custom spy
+let callCount = 0;
+fw.mock(() => callCount++).replace(myModule, 'trackEvent');
+```
+
+---
+
+## `fw.mock.restore(select?)`
+
+Restores mocked properties to their original values. By default it restores **all** active mocks. Pass a property name string to restore only that specific replacement.
+
+```js
+fw.mock.restore();             // restore every mock
+fw.mock.restore('fetchJson');  // restore only the fetchJson mock
+```
+
+After `restore()` is called, the internal mocks list is cleared.
+
+---
+
+## Full example
+
+The pattern below shows the complete lifecycle: mock before the tests that depend on it, run the tests, then restore everything inside the `fw.end()` callback.
+
+```js
+fw.start();
+
+// Install mock before the section that needs it
+fw.mock(() => Promise.resolve({ user: 'alice', role: 'admin' }))
+  .replace(window, 'fetchJson');
+
+fw.section('User API (mocked)');
+fw.test('Returns user data', async () => {
+  const data = await fetchJson('/api/user');
+  return data.user === 'alice';
+});
+fw.assert('Role is admin', async () => {
+  const data = await fetchJson('/api/user');
+  return data.role;
+}).is('admin');
+
+// Restore all mocks once the run is done
+fw.end().then(() => {
+  fw.mock.restore();
+});
+```
+
+<Warning>
+  Always call `fw.mock.restore()` after your tests complete. Leaving mocks in
+  place will affect any other code that runs afterwards — including other test
+  files or live application logic if you are running FireWyrm in the same
+  browser page as your app.
+</Warning>
+
+<Note>
+  FireWyrm mocking is intentionally minimal — it replaces properties on
+  existing objects, not module-level imports. If you need to intercept ES
+  module imports (e.g. `import { fetchJson } from './api.js'`) in a bundler
+  environment, use your bundler's own mock facilities (such as Vite's
+  `vi.mock()` or webpack's `jest.mock()`) alongside FireWyrm's assertion layer.
+</Note>

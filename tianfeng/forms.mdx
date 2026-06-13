@@ -1,0 +1,96 @@
+---
+title: "Form Validation and Input Formatting in TianFeng"
+sidebarTitle: "Forms"
+description: "TianFeng's validate object provides regex-based field validation and conform provides input formatting/normalization for phones, emails, dates, and more."
+---
+
+TianFeng provides two form utilities: `validate` for checking whether a value matches a known pattern, and `conform` for normalizing and formatting user input into a canonical representation. Both objects are populated with methods at `tf.init()` time and live on your context.
+
+## `validate` <sup>option: `validate`</sup>
+
+Each method accepts a string and returns a boolean. The underlying rules are pure regex tests (except `validate.date`, which delegates to `new Date()`).
+
+| Method | What it checks |
+|---|---|
+| `validate.required(input)` | Non-empty string |
+| `validate.email(input)` | Standard email format |
+| `validate.phone(input)` | 7–15 characters containing only digits, spaces, `+`, `-`, `(`, `)` |
+| `validate.alphabetic(input)` | Letters only (a–z, A–Z) |
+| `validate.numeric(input)` | Digits only (0–9) |
+| `validate.password(input)` | 8+ chars with at least one uppercase letter, one digit, and one special char (`!@#$%^&*`) |
+| `validate.url(input)` | `http://`, `https://`, or `ftp://` URL |
+| `validate.creditCard(input)` | Visa, Mastercard, Discover, AmEx, or JCB card number |
+| `validate.zipCode(input)` | Exactly 5 digits |
+| `validate.date(input)` | Parseable by `new Date()` |
+
+```js
+validate.email('user@example.com');   // true
+validate.email('not-an-email');       // false
+
+validate.password('Weak');            // false — no digit or special char
+validate.password('Str0ng!Pass');     // true
+
+validate.url('not-a-url');            // false
+validate.url('https://example.com'); // true
+```
+
+### HTML auto-wiring
+
+During `tf.init()`, TianFeng scans the DOM for elements with `data-validate-<type>` attributes and attaches an `input` event listener that calls `element.setCustomValidity()`. This makes native browser validation pick up your custom messages automatically.
+
+```html
+<input
+  type="email"
+  data-validate-email
+  data-validity-error="Please enter a valid email address"
+>
+
+<input
+  type="text"
+  data-validate-password
+  data-validity-error="Password must be 8+ chars with an uppercase letter, digit, and special character"
+>
+```
+
+If `data-validity-error` is absent, the fallback message is `"Form needs to fit <type> form"`.
+
+---
+
+## `conform` <sup>option: `conform`</sup>
+
+Each method accepts a string and returns a formatted string, or `false` if the value cannot be conformed to the expected format.
+
+| Method | Output format |
+|---|---|
+| `conform.phone(input)` | `(555) 123-4567` for 10-digit numbers; `+1-555-123-4567` for 11+ digits |
+| `conform.date(input)` | `YYYY-MM-DD` |
+| `conform.url(input)` | Prepends `http://` if no `http://` or `https://` prefix is present |
+| `conform.email(input)` | Lowercased canonical email, or `false` if invalid |
+| `conform.alphabetic(input)` | Uppercased string, or `false` if non-alphabetic chars are present |
+| `conform.alphabeticSpace(input)` | Letters and spaces uppercased, or `false` otherwise |
+| `conform.creditCard(input)` | `XXXX XXXX XXXX XXXX` (exactly 16 digits required) |
+| `conform.simplePhone(input)` | Strips all non-digit characters — useful for storage normalization |
+
+```js
+conform.phone('5551234567');           // '(555) 123-4567'
+conform.phone('15551234567');          // '+1-555-123-4567'
+conform.phone('123');                  // false — fewer than 10 digits
+
+conform.date('January 1, 2025');       // '2025-01-01'
+conform.date('not a date');            // false
+
+conform.url('example.com');            // 'http://example.com'
+conform.url('https://example.com');    // 'https://example.com' (unchanged)
+
+conform.email('USER@EXAMPLE.COM');     // 'user@example.com'
+conform.email('invalid');              // false
+
+conform.alphabetic('hello');           // 'HELLO'
+conform.alphabetic('hello world');     // false — space not allowed (use alphabeticSpace)
+conform.alphabeticSpace('hello world');// 'HELLO WORLD'
+
+conform.creditCard('4111111111111111');// '4111 1111 1111 1111'
+conform.creditCard('123');             // false — not exactly 16 digits
+
+conform.simplePhone('(555) 123-4567'); // '5551234567'
+```

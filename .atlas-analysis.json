@@ -1,0 +1,119 @@
+{
+  "projectType": "sdk-library",
+  "projectName": "WyvernJS",
+  "projectDescription": "A zero-dependency, modular JavaScript toolkit with four modules — DOM sugar (DiWu), utilities (TianFeng), async testing (FireWyrm), and logging/benchmarking (ShuiHu) — designed to fill the gaps in vanilla JS without heavy frameworks.",
+  "theme": "luma",
+  "primaryColor": "#fcc72c",
+  "lightColor": "#f5d8d5",
+  "darkColor": "#1c3c44",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "installation", "quickstart"]
+          },
+          {
+            "group": "DiWu — DOM Sugar",
+            "pages": [
+              "diwu/overview",
+              "diwu/events",
+              "diwu/manipulation",
+              "diwu/animation",
+              "diwu/querying"
+            ]
+          },
+          {
+            "group": "TianFeng — Utilities",
+            "pages": [
+              "tianfeng/overview",
+              "tianfeng/dom-helpers",
+              "tianfeng/async",
+              "tianfeng/state-routing",
+              "tianfeng/forms",
+              "tianfeng/device"
+            ]
+          },
+          {
+            "group": "FireWyrm — Testing",
+            "pages": [
+              "firewyrm/overview",
+              "firewyrm/tests-assertions",
+              "firewyrm/mocking"
+            ]
+          },
+          {
+            "group": "ShuiHu — Logging",
+            "pages": [
+              "shuihu/overview",
+              "shuihu/logging",
+              "shuihu/benchmarking"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "DiWu (dw): Chainable, prototype-extending DOM manipulation with WeakMap-backed event registry, Proxy-based class/attribute access, and Web Animations API integration",
+    "TianFeng (tf): Comprehensive utility layer covering DOM querying, hash-based SPA routing, reactive stores, localStorage persistence, throttle, async helpers, fetch wrappers, form validation/conforming, and device detection",
+    "FireWyrm (fw): Minimalist async-safe testing framework with chainable assertions (25+ matchers), section grouping, sequential test queue, and object method mocking/restore",
+    "ShuiHu (sh): Browser-focused logging with four severity levels (debug/warn/error/dire), Proxy-based step benchmarking using Uint32Array, in-memory log history, and DOM log holder",
+    "UMD build: works in browsers via CDN script tags, ES module imports, CommonJS (Node), and AMD/RequireJS",
+    "Zero dependencies, ~25 KB combined"
+  ],
+  "publicApiSurface": [
+    "dw.init(params?)",
+    "el.on(event, listener, options?)",
+    "el.off(event?, listener?)",
+    "el.once(event, listener, options?)",
+    "el.promiseMeOnce(event, listener, options?)",
+    "el.css(styles)",
+    "el.text(content)",
+    "el.html(content)",
+    "el.append(node)",
+    "el.prepend(node)",
+    "el.appendTo(parent)",
+    "el.prependTo(parent)",
+    "el.addChildren(arr)",
+    "el.replaceAs(el)",
+    "el.empty()",
+    "el.hide() / el.show(type?) / el.toggle(type?)",
+    "el.animateTo(animation, duration, easing?, iterations?)",
+    "el.thendo(callback)",
+    "el.setAttrs(attrs, value?)",
+    "el.setClasses(clas) / el.removeClasses(clas)",
+    "el.qs(selector) / el.qsa(selector)",
+    "el.classes (Proxy) / el.attrs (Proxy) / el.siblings",
+    "promise.wait(ms)",
+    "tf.init(context?, options?)",
+    "$(selector)",
+    "setTask(fn, delay?, args?, iterations?) / clearTask(id) / changeTask(id, opts)",
+    "persist (Proxy for localStorage)",
+    "query (Proxy for URLSearchParams)",
+    "validate.email/phone/url/password/creditCard/...",
+    "conform.phone/date/email/creditCard/...",
+    "fetchJson(url, ops?) / fetchText(url, ops?) / fetchFresh(url, ops?)",
+    "safeParse(json)",
+    "throttle(fn, delay?, options?)",
+    "device",
+    "tree(definition, parent?, postProcess?)",
+    "createStore(init)",
+    "wait(ms) / waitUntil(time) / waitFrame()",
+    "retry(action, opts?)",
+    "parallel(tasks, opts?) / sequence(tasks)",
+    "route.init(startUrl?) / route.when(url, cb) / route.go(url) / route.guard(cb) / route.back() / route.forward()",
+    "fw.start() / fw.section(name) / fw.test(statement, fn) / fw.assert(statement, value).<matcher>()",
+    "fw.mock(fn).replace(obj, prop) / fw.mock.restore(select?)",
+    "fw.end(verbose?)",
+    "sh.log/debug/warn/error/dire(statement, context?)",
+    "sh.time.<label>.start() / .step(flag) / .stop() / .cancel()",
+    "sh.outputLogs(label?, serialize?, lastAmount?)",
+    "sh.outputElementLogs(label?, lastAmount?)",
+    "sh.createLogHolder(parent?)",
+    "sh.setUpdateFn(fn)",
+    "sh.clear()"
+  ]
+}

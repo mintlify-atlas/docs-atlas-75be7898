@@ -1,0 +1,140 @@
+---
+title: "DOM Manipulation Methods in DiWu"
+sidebarTitle: "Manipulation"
+description: "DiWu adds chainable methods to HTMLElement for appending, prepending, replacing, showing, hiding, toggling, and setting content."
+---
+
+DiWu adds a suite of manipulation methods to `HTMLElement.prototype` and `Element.prototype`. Every method returns `this` (or the replacement element, in the case of `replaceAs`) so calls can be composed into fluent chains without ever breaking out of an expression. Methods are grouped below by their role.
+
+## Content setters
+
+These three methods live on `HTMLElement.prototype` and cover the most common ways to set element content.
+
+**`el.text(content)`** — Sets `textContent` to `content`. Returns `this`.
+
+```js
+el.text('Hello DiWu');
+```
+
+**`el.html(content)`** — Sets `innerHTML` to `content`. Returns `this`.
+
+```js
+el.html('<strong>Bold</strong> text');
+```
+
+**`el.empty()`** — Sets `innerHTML` to an empty string, removing all child nodes. Returns `this`.
+
+```js
+el.empty();
+```
+
+## Append and prepend
+
+**`el.append(node)`** — Appends a string (as a text node), a single `Node`, or an array of nodes to the element. Returns `this`.
+
+**`el.prepend(node)`** — Prepends a string, a single `Node`, or an array of nodes. When passed an array, nodes are reversed before insertion so they appear in their original order at the front. Returns `this`.
+
+**`el.appendTo(parent)`** — Appends `this` element as a child of `parent`. Returns `this`.
+
+```js
+el.appendTo(document.body);
+```
+
+**`el.prependTo(parent)`** — Prepends `this` element as the first child of `parent`. Returns `this`.
+
+**`el.addChildren(arr)`** — Appends every node in the array `arr` to the element using `appendChild`. Throws if the argument is not an array. Returns `this`.
+
+```js
+el.addChildren([iconEl, labelEl, badgeEl]);
+```
+
+## Replace
+
+**`el.replaceAs(newEl)`** — Replaces `this` in the DOM with `newEl` (calls `this.replaceWith(newEl)`). Returns `newEl` rather than `this`, so subsequent chain calls operate on the replacement element.
+
+```js
+const replacement = oldEl.replaceAs(newEl);
+replacement.css({ color: 'red' });
+```
+
+## Visibility
+
+These methods are on `HTMLElement.prototype` and coordinate through `dataset.originalDisplay` so the original display value survives a hide/show round-trip.
+
+**`el.hide()`** — Saves the current computed display value in `el.dataset.originalDisplay`, then sets `display: none`. Returns `this`.
+
+**`el.show(displayType?)`** — Restores `display` to `displayType` if provided, otherwise falls back to `el.dataset.originalDisplay`, and finally defaults to `'block'`. Returns `this`.
+
+**`el.toggle(displayType?)`** — Calls `el.hide()` if the element is currently visible, or `el.show(displayType)` if it is hidden. Returns `this`.
+
+```js
+btn.on('click', () => panel.toggle('flex'));
+```
+
+## Attribute and class helpers
+
+**`el.setAttrs(attrs, value?)`** — Accepts either a plain object of `{ attribute: value }` pairs, or a `(string, value)` signature for setting a single attribute. Internally delegates to the `attrs` Proxy (see below). Returns `this`.
+
+```js
+el.setAttrs({ id: 'hero', tabindex: '0' });
+el.setAttrs('aria-label', 'Close dialog');
+```
+
+**`el.setClasses(clas)`** — Accepts a single class name string or an array of class name strings and adds them all via `classList.add`. Returns `this`.
+
+```js
+el.setClasses(['card', 'featured']);
+```
+
+**`el.removeClasses(clas)`** — Accepts a single class name string or an array and removes them via `classList.remove`. Returns `this`.
+
+```js
+el.removeClasses('featured');
+```
+
+**`el.css(styles)`** — Accepts a plain object of CSS property/value pairs and applies each one to `el.style`. Added to `Element.prototype`. Returns `this`.
+
+```js
+el.css({ fontSize: '18px', lineHeight: '1.5', color: '#333' });
+```
+
+## Proxy properties
+
+These three properties are defined as getters on `HTMLElement.prototype` and return `Proxy` objects that make attribute and class manipulation feel like plain property access.
+
+**`el.classes`** — Returns a Proxy over `classList`. Setting a property to `true` adds the class; setting it to `false` removes it. Reading a property returns a boolean.
+
+```js
+el.classes.active = true;   // classList.add('active')
+el.classes.active = false;  // classList.remove('active')
+console.log(el.classes.active); // true / false
+```
+
+**`el.attrs`** — Returns a Proxy over `getAttribute` / `setAttribute` / `removeAttribute`. Reading returns the attribute value or `undefined` if absent. Setting a falsy value removes the attribute.
+
+```js
+console.log(el.attrs.id);   // getAttribute('id') or undefined
+el.attrs.id = 'main-card';  // setAttribute('id', 'main-card')
+el.attrs.hidden = false;    // removeAttribute('hidden')
+```
+
+**`el.siblings`** — A getter (not a Proxy) that returns an array of all sibling elements, i.e. every child of `el.parentNode` except `el` itself.
+
+```js
+el.siblings.forEach(s => s.css({ opacity: '0.5' }));
+```
+
+## Chained example
+
+```js
+const card = document.createElement('div');
+card
+  .css({ padding: '16px', borderRadius: '8px' })
+  .text('Hello')
+  .setClasses(['card', 'featured'])
+  .appendTo(document.body);
+
+card.classes.featured = false; // removes 'featured'
+console.log(card.attrs.id);    // undefined (not set)
+card.attrs.id = 'main-card';   // sets id attribute
+```

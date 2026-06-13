@@ -1,0 +1,61 @@
+---
+title: "DiWu: Chainable DOM Sugar for Vanilla JS"
+sidebarTitle: "Overview"
+description: "DiWu extends native DOM prototypes with chainable methods, Proxy-based class and attribute access, and WeakMap-backed event management — all in ~4 KB."
+---
+
+DiWu (`dw`) is WyvernJS's DOM module. It extends `HTMLElement`, `Element`, `EventTarget`, and `Promise` prototypes with ergonomic methods that chain fluently and integrate with the Web Animations API. Rather than wrapping elements in a custom object, DiWu works directly on native DOM nodes — every method you call is genuinely on the element itself.
+
+## Initialization
+
+Before any DiWu methods are available, call `dw.init()`. This walks the internal method registry and attaches each method to its target prototype, skipping any that are already defined (unless you explicitly force them).
+
+```js
+dw.init();
+```
+
+Every method name accepted in `params` corresponds directly to a method DiWu would otherwise add. Pass `false` to skip a method entirely, or `'force'` to override an existing definition on the prototype.
+
+```js
+// Disable specific prototype additions:
+dw.init({ on: false, off: false, once: false }); // disables event shorthands
+
+// Force-add even if already defined:
+dw.init({ css: 'force' });
+```
+
+The full list of configurable method names is: `on`, `off`, `once`, `promiseMeOnce`, `animateTo`, `addChildren`, `appendTo`, `prependTo`, `replaceAs`, `empty`, `prepend`, `append`, `text`, `html`, `setAttrs`, `setClasses`, `removeClasses`, `qs`, `qsa`, `$`, `css`, `thendo`, `hide`, `show`, `toggle`, `wait`, `siblings`, `classes`, `attrs`.
+
+<Warning>
+  DiWu pollutes native prototypes (`HTMLElement`, `Element`, `EventTarget`, `Promise`). If your environment or a third-party library already defines any of these method names on those prototypes, DiWu will silently skip them by default. Use per-method params (`false` to disable, `'force'` to override) to control exactly which additions are applied.
+</Warning>
+
+## Feature Overview
+
+<CardGroup cols={2}>
+  <Card title="Events" icon="bolt" href="/diwu/events">
+    `.on()`, `.off()`, `.once()`, and `.promiseMeOnce()` — WeakMap-backed event management on `EventTarget`.
+  </Card>
+  <Card title="DOM Manipulation" icon="pen-to-square" href="/diwu/manipulation">
+    Chainable content setters, append/prepend helpers, visibility toggles, and Proxy-based class/attribute access.
+  </Card>
+  <Card title="Animation" icon="wand-magic-sparkles" href="/diwu/animation">
+    `.animateTo()` wraps the Web Animations API and commits the final state. `.thendo()` hooks into any transition or animation end.
+  </Card>
+  <Card title="Querying & Styling" icon="magnifying-glass" href="/diwu/querying">
+    `.qs()`, `.qsa()`, and `.$()` as scoped selector shorthands, plus `.css()` for inline style objects.
+  </Card>
+</CardGroup>
+
+## Quick example
+
+Once `dw.init()` has run, every native DOM element gains DiWu's methods. The following chain queries an element, styles it, sets its text, attaches a class, registers a click listener, and moves it into `document.body` — all in one expression:
+
+```js
+document.querySelector('.card')
+  .css({ borderRadius: '8px', padding: '16px' })
+  .text('Hello DiWu')
+  .setClasses('active')
+  .on('click', (e) => console.log('clicked'))
+  .appendTo(document.body);
+```

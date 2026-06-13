@@ -1,0 +1,69 @@
+---
+title: "WyvernJS: Lightweight Modular Utilities for Vanilla JS"
+sidebarTitle: "Introduction"
+description: "Learn what WyvernJS is, why it exists, its four modules, and how to choose which ones to use in your project."
+---
+
+WyvernJS is a lightweight, zero-dependency toolkit published to npm as `@mchen_dragon/wyvernjs` (v1.0.16). It gives vanilla JavaScript the wings it's always been missing — without asking you to adopt a framework, install a build pipeline, or change how you write code. The library ships as a single UMD bundle (~25 KB combined) that works as a classic `<script>` tag, an ES module CDN import, a CommonJS `require`, or an AMD `define`. Every module is independently importable, so you only ship what you actually use.
+
+## The Four Modules
+
+WyvernJS is made up of four independently usable modules, each targeting a distinct area of everyday JavaScript pain.
+
+| Module | Alias | Environment | Purpose |
+|--------|-------|-------------|---------|
+| **DiWu** (Earth Tortoise) | `dw` | Browser only | Chainable, prototype-extending DOM sugar — events, animations, style, class/attribute proxies |
+| **TianFeng** (Sky Phoenix) | `tf` | ES9+ for non-DOM features; browser for DOM helpers | Practical utilities: routing, reactive stores, fetch helpers, form validation/conforming, device detection, async tools, and a JSX-like `tree()` builder |
+| **FireWyrm** (Fire Wyvern) | `fw` | ES9+ (all environments) | Async test runner with 25+ chainable matchers and a lightweight mock/restore system |
+| **ShuiHu** (Water Tiger) | `sh` | ES9+ (`logToDOM` is browser-only) | Structured logging with log levels, in-memory history, step-based benchmarking, and DOM log output |
+
+## Philosophy
+
+WyvernJS is built around a developer-centric philosophy: programming should give developers the best foundation and freedom to create without fighting their tools. Four guiding principles shape every design decision:
+
+- **Gradual adoption** — Each module is completely independent. Drop in just `sh` for logging, just `fw` for testing, or use all four together. Nothing forces a total commitment.
+- **No framework lock-in** — WyvernJS extends the native DOM and global scope rather than wrapping them in a component model. Your existing code keeps working exactly as-is.
+- **Init-and-go** — Near-zero boilerplate. Call `dw.init()` and `tf.init()` once, and every feature is available through natural native syntax (`el.css({})`, `el.classes.active = true`).
+- **Developer experience first** — Intuitive chainable APIs, Proxy-based property access, and consistent naming (`fw`, `dw`, `tf`, `sh`) keep code readable and discoverable.
+
+<Warning>
+  Some WyvernJS features default to adding methods to built-in prototypes (`Element.prototype`, `EventTarget.prototype`, etc.) and attaching helpers to `window`. This behaviour is intentional and opt-in via `init()`, but it can be restricted. Pass specific flags to `dw.init()` (e.g., `{ on: false }`) to suppress individual prototype additions, or pass a non-`window` context to `tf.init()` to avoid polluting the global scope.
+</Warning>
+
+## Environment Support
+
+Each module has different runtime requirements:
+
+| Module | Browser | Node.js / ES9+ non-browser |
+|--------|---------|---------------------------|
+| **DiWu** | ✅ Full support | ❌ DOM-only; not applicable |
+| **TianFeng** | ✅ Full support (including DOM helpers, `body`, `route`, `device`) | ✅ Non-DOM features work (stores, async helpers, `safeParse`, `throttle`, etc.) — pass a non-`window` context to `tf.init()` |
+| **FireWyrm** | ✅ Full support | ✅ All features supported |
+| **ShuiHu** | ✅ Full support (including `logToDOM` / `outputElementLogs`) | ✅ Core logging and benchmarking work; `logToDOM` and DOM output methods are browser-only |
+
+<Note>
+  Only browsers have been officially tested. Node.js compatibility for the non-DOM portions of TianFeng, FireWyrm, and ShuiHu is expected on ES9+ runtimes but is not yet formally verified.
+</Note>
+
+## Explore WyvernJS
+
+<CardGroup cols={2}>
+  <Card title="Installation" icon="download" href="/installation">
+    Add WyvernJS via npm, CDN script tags, or ES module imports.
+  </Card>
+  <Card title="Quickstart" icon="bolt" href="/quickstart">
+    Build a working example with all four modules in under five minutes.
+  </Card>
+  <Card title="DiWu" icon="layer-group" href="/diwu/overview">
+    Chainable DOM manipulation, events, animations, and Proxy-based class/attribute access.
+  </Card>
+  <Card title="TianFeng" icon="wrench" href="/tianfeng/overview">
+    Routing, stores, fetch helpers, form tools, device detection, and more.
+  </Card>
+  <Card title="FireWyrm" icon="flask" href="/firewyrm/overview">
+    Async test runner with 25+ matchers, sections, and mock/restore.
+  </Card>
+  <Card title="ShuiHu" icon="chart-line" href="/shuihu/overview">
+    Structured logging, log levels, in-memory history, and step benchmarking.
+  </Card>
+</CardGroup>

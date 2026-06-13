@@ -1,0 +1,43 @@
+---
+title: "ShuiHu: Structured Logging and Benchmarking for Browsers"
+sidebarTitle: "Overview"
+description: "ShuiHu (sh) provides four log severity levels, step-based performance benchmarking, in-memory log history, and optional DOM log output — all in ~3 KB."
+---
+
+ShuiHu (`sh`) is WyvernJS's logging and performance-timing module. It wraps `console.log`, `console.warn`, and `console.error` with timestamped, labeled log entries stored in an in-memory history, and provides a proxy-based step benchmarking system using `Uint32Array` for minimal overhead. Every log call records a `{ statement, context, label, timestamp }` object internally, giving you a queryable history of everything your application has logged at runtime.
+
+## Log Levels
+
+ShuiHu defines four severity levels. Each level maps to a numeric value used when filtering log output:
+
+| Level | Numeric value | Notes |
+|-------|--------------|-------|
+| `debug` | `0` | General-purpose diagnostic output |
+| `warn` | `1` | Non-fatal conditions worth attention |
+| `error` | `2` | Recoverable failures |
+| `dire` | `3` | Critical failures — highest severity |
+
+`sh.log` is a direct alias for `sh.debug` and behaves identically.
+
+```js
+sh.log('User logged in');               // debug level
+sh.debug('Fetching items', { url });    // debug with context
+sh.warn('Cache miss', { key });         // warn
+sh.error('Request failed', { status }); // error
+sh.dire('Database unreachable');        // dire — highest severity
+```
+
+## Environment
+
+ShuiHu requires **ES9+**. The core logging methods (`log`, `debug`, `warn`, `error`, `dire`, `outputLogs`, `clear`, `setUpdateFn`) and the `sh.time` benchmarking system work on any ES9+ JavaScript interpreter. The DOM helpers `sh.createLogHolder()` and `sh.outputElementLogs()` are browser-only and additionally depend on DiWu (`dw.init()`) for DOM manipulation.
+
+## Explore ShuiHu
+
+<CardGroup cols={2}>
+  <Card title="Logging" icon="list" href="/shuihu/logging">
+    Log methods, in-memory history, filtering with `outputLogs`, live update callbacks, and DOM log output.
+  </Card>
+  <Card title="Benchmarking" icon="stopwatch" href="/shuihu/benchmarking">
+    Proxy-based step timers with `sh.time`, `Uint32Array` storage, and formatted benchmark reports.
+  </Card>
+</CardGroup>

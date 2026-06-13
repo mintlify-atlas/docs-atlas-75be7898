@@ -1,0 +1,59 @@
+---
+title: "Web Animations API Integration in DiWu"
+sidebarTitle: "Animation"
+description: "DiWu wraps the Web Animations API with .animateTo() and adds .thendo() lifecycle hooks to run callbacks after any transition or animation ends."
+---
+
+DiWu provides `animateTo()` on `HTMLElement.prototype`, which wraps the browser's Web Animations API and automatically applies the final keyframe state as inline styles when the animation finishes — so the element stays put instead of snapping back. `thendo()` on `Element.prototype` lets you register a one-shot callback that fires after any CSS transition, CSS animation, media playback end, or load completion event, then cleans up all of its own listeners automatically.
+
+## `el.animateTo(animation, duration, easing?, iterations?)`
+
+Calls `this.animate(keyframes, opts)` under the hood and listens for the `finish` event to commit the final state via `el.css(finalKeyframe)`.
+
+| Parameter | Type | Default | Description |
+|---|---|---|---|
+| `animation` | `object \| object[]` | — | A single keyframe object `{ prop: value }` or an array of keyframe objects. |
+| `duration` | `number` | — | Animation duration in milliseconds. |
+| `easing` | `string` | `"linear(0,1)"` | A CSS easing function string. |
+| `iterations` | `number` | `1` | Number of times the animation repeats. |
+
+When `animation` is a plain object, DiWu wraps it in a one-element array and uses it as both the only keyframe and the final state to commit. When it is an array, the last element in the array is committed as the final state. Returns `this` for chaining.
+
+```js
+// Animate to final position and stay there
+el.animateTo({ opacity: 0, transform: 'translateY(-20px)' }, 300);
+
+// Keyframe array
+el.animateTo(
+  [{ opacity: 1 }, { opacity: 0 }],
+  500,
+  'ease-in-out'
+);
+
+// Chain with .on() to respond after the animation element fires its own events
+el.animateTo({ opacity: 0 }, 200)
+  .on('animationend', () => el.remove());
+```
+
+## `el.thendo(callback)`
+
+Registers a one-shot callback that fires after the first of the following events bubbles from `el` itself: `transitionend`, `animationend`, `ended` (media playback), `loadend` (media load), or `complete` (legacy image load). Once any one of them fires, all five listeners are immediately removed. The `callback` receives the element as both `this` and as its first argument.
+
+```js
+el.css({ transition: 'opacity 0.3s' })
+  .css({ opacity: '0' })
+  .thendo((el) => {
+    el.remove(); // clean up after fade out
+  });
+```
+
+If `callback` is not a function, `thendo` returns `this` without registering any listeners.
+
+<Tip>
+  Chain `.animateTo()` with `.thendo()` to sequence animations. Because `animateTo` returns `this`, you can immediately attach a `thendo` that kicks off the next step once the animation ends:
+
+  ```js
+  el.animateTo({ transform: 'scale(1.2)' }, 200)
+    .thendo(el => el.animateTo({ transform: 'scale(1)' }, 200));
+  ```
+</Tip>

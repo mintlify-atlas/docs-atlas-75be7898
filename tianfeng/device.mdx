@@ -1,0 +1,135 @@
+---
+title: "Device Detection in TianFeng"
+sidebarTitle: "Device"
+description: "TianFeng's device object provides 30+ properties for detecting touch, color scheme, browser, OS, screen, viewport, connectivity, battery, and geolocation support."
+---
+
+After `tf.init()`, the `device` object on your context exposes a comprehensive snapshot of the user's environment, including touch capabilities, color scheme preference, browser type, OS, screen and viewport dimensions, network connectivity, battery status, and geolocation support. Most properties are populated synchronously at init time; a handful update reactively as system conditions change.
+
+## Touch
+
+| Property | Type | Description |
+|---|---|---|
+| `device.isTouch` | `boolean` | `true` if `'ontouchstart' in window` or `navigator.maxTouchPoints > 0` |
+| `device.touchPoints` | `number` | `navigator.maxTouchPoints` — `0` if unavailable |
+
+## Color Scheme
+
+| Property | Type | Description |
+|---|---|---|
+| `device.isDarkMode` | `boolean` | `true` if `prefers-color-scheme: dark` |
+| `device.isLightMode` | `boolean` | `true` if `prefers-color-scheme: light` |
+
+<Note>
+  `device.isDarkMode` and `device.isLightMode` automatically update when the OS color scheme changes — no need to re-call `tf.init()`.
+</Note>
+
+## Network
+
+| Property | Type | Description |
+|---|---|---|
+| `device.isOffline` | `boolean` | `true` if `!navigator.onLine` — updates on `online`/`offline` events |
+| `device.connection` | `object \| null` | `{ effectiveType, saveData, downlink, rtt }` from the Network Information API, or `null` if unsupported |
+
+<Note>
+  `device.isOffline` updates automatically when the browser detects a connectivity change.
+</Note>
+
+## Platform
+
+| Property | Type | Description |
+|---|---|---|
+| `device.isMobile` | `boolean` | `true` if the UA contains `Mobi`, `Android`, `iPhone`, `iPad`, or `iPod` |
+| `device.isDesktop` | `boolean` | `true` if the UA does not match the mobile pattern |
+
+## Browser
+
+`device.browser` is an object with one boolean per major browser. Note that `isSafari` excludes Chrome (which also includes "Safari" in its UA string).
+
+| Property | Detection |
+|---|---|
+| `device.browser.isChrome` | `/Chrome/i` in UA |
+| `device.browser.isFirefox` | `/Firefox/i` in UA |
+| `device.browser.isSafari` | `/Safari/i` in UA **and** not Chrome |
+| `device.browser.isEdge` | `/Edg/i` in UA |
+| `device.browser.isIE` | `/Trident/i` in UA |
+
+## OS
+
+`device.os` provides UA-based operating system detection.
+
+| Property | Detection |
+|---|---|
+| `device.os.isWindows` | `/Windows/i` in UA |
+| `device.os.isMac` | `/Macintosh\|Mac OS X/i` in UA |
+| `device.os.isLinux` | `/Linux/i` in UA |
+| `device.os.isiOS` | `/iPhone\|iPad\|iPod/i` in UA |
+| `device.os.isAndroid` | `/Android/i` in UA |
+
+## Screen
+
+`device.screen` reflects `window.screen` values captured at init time.
+
+| Property | Description |
+|---|---|
+| `device.screen.width` | `window.screen.width` |
+| `device.screen.height` | `window.screen.height` |
+| `device.screen.orientation` | `window.screen.orientation.type`, defaults to `'portrait-primary'` if unsupported |
+| `device.screen.pixelRatio` | `window.devicePixelRatio`, defaults to `1` if unavailable |
+
+## Viewport
+
+| Property | Description |
+|---|---|
+| `device.viewport.width` | `window.innerWidth` at init time |
+| `device.viewport.height` | `window.innerHeight` at init time |
+
+## Battery
+
+`device.battery` starts as `null` and is populated asynchronously via the Battery Status API after init. Once resolved it contains:
+
+| Key | Description |
+|---|---|
+| `level` | Charge level as a float between `0` and `1` |
+| `charging` | `true` if currently charging |
+| `chargingTime` | Seconds until full charge (or `Infinity`) |
+| `dischargingTime` | Seconds of remaining battery life (or `Infinity`) |
+
+## Geolocation
+
+| Property | Type | Description |
+|---|---|---|
+| `device.hasGeolocation` | `boolean` | `true` if `'geolocation' in navigator` |
+
+---
+
+## Quick reference example
+
+```js
+tf.init();
+
+if (device.isDarkMode)     applyDarkTheme();
+if (device.isTouch)        enableTouchUI();
+if (device.isOffline)      showOfflineBanner();
+if (device.hasGeolocation) promptForLocation();
+
+console.log(device.browser);
+// { isChrome: true, isFirefox: false, isSafari: false, isEdge: false, isIE: false }
+
+console.log(device.os);
+// { isWindows: false, isMac: true, isLinux: false, isiOS: false, isAndroid: false }
+
+console.log(device.screen);
+// { width: 1920, height: 1080, orientation: 'landscape-primary', pixelRatio: 2 }
+
+console.log(device.viewport);
+// { width: 1440, height: 900 }
+
+console.log(device.connection);
+// { effectiveType: '4g', saveData: false, downlink: 10, rtt: 50 }
+// or null if the Network Information API is not supported
+
+// Battery is async — check after a tick or in a listener
+setTimeout(() => console.log(device.battery), 500);
+// { level: 0.87, charging: true, chargingTime: 1800, dischargingTime: Infinity }
+```

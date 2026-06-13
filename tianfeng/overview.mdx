@@ -1,0 +1,65 @@
+---
+title: "TianFeng: Practical Utilities for Everyday JS"
+sidebarTitle: "Overview"
+description: "TianFeng (tf) fills in the gaps of native JS: DOM querying, routing, stores, persistence, fetch helpers, form validation, async utilities, and device detection."
+---
+
+TianFeng (`tf`) is WyvernJS's utility module. It populates `window` (or any context object you provide) with a broad set of helpers that solve common pain points in vanilla JS projects — from smart DOM querying and hash-based routing to reactive stores, form validation, and device detection.
+
+## Initialization
+
+```js
+tf.init(context?, options?)
+```
+
+Call `tf.init()` once at the top of your script to activate TianFeng. By default it writes all helpers directly onto `window`, so you can call `$()`, `fetchJson()`, `route`, and the rest as bare globals.
+
+**`context`** defaults to `window`. Pass `tf` itself if you'd prefer not to pollute the global scope — every helper will then live under `tf.*` instead.
+
+**`options`** is an object where each key maps to a feature group. Omitting a key (or setting it to `true`) enables that group. Setting a key to `false` disables it entirely.
+
+| Option key | Feature group |
+|---|---|
+| `selector` | `$()` DOM selector |
+| `setTask` | `setTask` / `clearTask` / `changeTask` |
+| `persist` | `persist` localStorage proxy |
+| `bodyInWindow` | `body` shorthand |
+| `query` | `query` / `urlQuery` URL param proxy |
+| `validate` | `validate.*` field validation |
+| `conform` | `conform.*` input formatting |
+| `fetchhelp` | `fetchJson` / `fetchText` / `fetchFresh` |
+| `safeJSON` | `safeParse` |
+| `throttle` | `throttle` |
+| `device` | `device` environment snapshot |
+| `tree` | `tree()` DOM builder |
+| `stores` | `createStore` |
+| `async` | `wait` / `waitUntil` / `waitFrame` / `retry` / `parallel` / `sequence` |
+| `route` | `route` hash-based router |
+
+```js
+// Defaults: context = window, all feature groups enabled
+tf.init();
+
+// Populate tf itself; skip the body shorthand and routing
+tf.init(tf, { bodyInWindow: false, route: false });
+```
+
+## Feature Groups
+
+<CardGroup cols={2}>
+  <Card title="DOM Helpers" icon="code" href="/tianfeng/dom-helpers">
+    Smart `$()` selector, `tree()` builder, `persist` localStorage proxy, and `query` URL param proxy.
+  </Card>
+  <Card title="Async & Tasks" icon="clock" href="/tianfeng/async">
+    `setTask`, `throttle`, fetch wrappers, and promise helpers like `wait`, `retry`, `parallel`, and `sequence`.
+  </Card>
+  <Card title="State & Routing" icon="arrow-right-arrow-left" href="/tianfeng/state-routing">
+    `createStore` deep reactive proxy and `route` hash-based SPA router with guards and params.
+  </Card>
+  <Card title="Forms" icon="input-text" href="/tianfeng/forms">
+    `validate` for regex-based field checking and `conform` for canonical input formatting.
+  </Card>
+  <Card title="Device Detection" icon="mobile" href="/tianfeng/device">
+    `device` snapshot covering touch, color scheme, browser, OS, screen, network, battery, and geolocation.
+  </Card>
+</CardGroup>

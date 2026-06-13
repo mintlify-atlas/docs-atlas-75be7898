@@ -1,0 +1,86 @@
+---
+title: "FireWyrm: Lightweight Async Testing for the Browser"
+sidebarTitle: "Overview"
+description: "FireWyrm (fw) is a zero-config async test runner with 25+ chainable assertions, test sections, sequential queuing, and object mocking — in ~5 KB."
+---
+
+FireWyrm (`fw`) is WyvernJS's built-in testing module. It runs every test sequentially through a `Promise`-based queue, supports `async` test functions natively without any additional setup, and organises tests into named sections that each emit their own pass/fail summary. Results are printed to the console using clear ✅/❌ markers. FireWyrm ships as a single file with no dependencies and targets ES9+ environments — it works in modern browsers and in Node.js, and is exported under both the full name `firewyrm` and the short alias `fw`.
+
+## When to use FireWyrm
+
+FireWyrm is the right choice when you want tests without a build pipeline:
+
+- **Zero-config browser smoke tests** — drop one `<script>` tag in an HTML file and start asserting immediately.
+- **Small projects** — when a full Jest/Vitest setup would outweigh the codebase itself, FireWyrm lets you stay focused on the logic being tested.
+- **Single-file test runner** — no `npm test`, no config files, no watchers. Load the script, call `fw.start()` … `fw.end()`, and read the results in the console.
+- **Async-heavy code** — the sequential queue means you can freely `await` inside test functions; there is no race between tests.
+
+## Basic test structure
+
+The entire API follows one pattern: register tests between `fw.start()` and `fw.end()`, optionally organising them into sections with `fw.section()`.
+
+```js
+fw.start();
+
+fw.section('Math');
+fw.assert('Addition', () => 1 + 1).is(2);
+fw.assert('Falsey check', () => 0).isFalsey();
+fw.test('Always true', () => true);
+
+fw.section('Async');
+fw.test('Delay resolves', async () => {
+  await new Promise(r => setTimeout(r, 50));
+  return true;
+});
+
+fw.end();
+```
+
+`fw.test()` accepts any function that returns a truthy value — sync or async. `fw.assert()` returns a chainable matcher object so you can express expectations more precisely. Both methods return `fw` itself, allowing fluent chaining if preferred.
+
+## Output format
+
+When the test run completes, FireWyrm flushes all buffered output to `console.log` (or a custom logging function you provide) in this order:
+
+```
+🔥🐲 FIREWYRM TESTING 🔥🐲
+==========================
+
+‎=== Math ===
+  Math 0: Addition
+   ✅ Passed
+  Math 1: Falsey check
+   ✅ Passed
+  Math 2: Always true
+   ✅ Passed
+SECTION RESULTS: 3/3 passed
+ ✅ Passed
+
+‎=== Async ===
+  Async 0: Delay resolves
+   ✅ Passed
+SECTION RESULTS: 1/1 passed
+ ✅ Passed
+
+=== FINAL RESULTS ===
+Total tests: 4
+Passed: 4
+Failed: 0
+```
+
+Each section opens with an `===` header, lists every test with its ✅ or ❌ outcome, and closes with a `SECTION RESULTS: x/y passed` line followed by an overall section ✅/❌. After all sections, a final summary reports total tests, passes, and failures.
+
+<Note>
+  FireWyrm uses a sequential queue — tests run in the exact order they are registered, even across `async` test functions. No two tests run concurrently.
+</Note>
+
+## Explore further
+
+<CardGroup cols={2}>
+  <Card title="Tests & Assertions" icon="flask" href="/firewyrm/tests-assertions">
+    Full reference for fw.test(), fw.assert(), and all 30+ chainable matchers.
+  </Card>
+  <Card title="Mocking" icon="swap" href="/firewyrm/mocking">
+    Replace object methods with stubs using fw.mock() and restore them afterwards.
+  </Card>
+</CardGroup>
