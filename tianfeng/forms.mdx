@@ -1,5 +1,5 @@
 ---
-title: "Form Validation and Input Formatting in TianFeng"
+title: "Form Validation and Input Formatting in TianFeng JS"
 sidebarTitle: "Forms"
 description: "TianFeng's validate object provides regex-based field validation and conform provides input formatting/normalization for phones, emails, dates, and more."
 ---
@@ -69,7 +69,7 @@ Each method accepts a string and returns a formatted string, or `false` if the v
 | `conform.alphabetic(input)` | Uppercased string, or `false` if non-alphabetic chars are present |
 | `conform.alphabeticSpace(input)` | Letters and spaces uppercased, or `false` otherwise |
 | `conform.creditCard(input)` | `XXXX XXXX XXXX XXXX` (exactly 16 digits required) |
-| `conform.simplePhone(input)` | Strips all non-digit characters — useful for storage normalization |
+| `conform.simplePhone(input)` | Strips all non-digit characters — useful for storage normalization. Also aliased as `conform.simpleCreditCard`. |
 
 ```js
 conform.phone('5551234567');           // '(555) 123-4567'
@@ -92,5 +92,10 @@ conform.alphabeticSpace('hello world');// 'HELLO WORLD'
 conform.creditCard('4111111111111111');// '4111 1111 1111 1111'
 conform.creditCard('123');             // false — not exactly 16 digits
 
-conform.simplePhone('(555) 123-4567'); // '5551234567'
+conform.simplePhone('(555) 123-4567');          // '5551234567'
+conform.simpleCreditCard('4111 1111 1111 1111'); // '4111111111111111' — same function as simplePhone
 ```
+
+<Note>
+  `conform.simpleCreditCard` is an alias for `conform.simplePhone` — both strip all non-digit characters from the input string. Use whichever name is clearer in context.
+</Note>

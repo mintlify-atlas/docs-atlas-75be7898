@@ -1,5 +1,5 @@
 ---
-title: "Async Utilities and Task Scheduling in TianFeng"
+title: "Async Utilities and Task Scheduling in TianFeng JS"
 sidebarTitle: "Async"
 description: "TianFeng provides setTask (a better setInterval), throttle with leading/trailing control, wait/retry helpers, and fetch wrappers for cleaner async code."
 ---
@@ -21,12 +21,17 @@ setTask(fn, delay?, args?, iterations?)
 | `args` | `[]` | Array of arguments forwarded to `fn`. |
 | `iterations` | `Infinity` | Maximum number of executions before the task stops itself. |
 
-Inside the callback, `this` (the `control` object) exposes a `stop()` method so the task can cancel itself without needing an external reference to its id:
+Inside the callback, `this` is bound to a `control` object with two members:
+
+| Property | Description |
+|---|---|
+| `stop()` | Cancels the task immediately — no external id needed. |
+| `iterations` | The total iteration limit the task was started with. |
 
 ```js
 const id = setTask(function() {
-  console.log('tick');
-  if (someCondition) this.stop(); // self-cancel via the control object
+  console.log('tick', this.iterations); // log the iteration limit
+  if (someCondition) this.stop();       // self-cancel via the control object
 }, 1000);
 
 clearTask(id);                    // cancel from outside

@@ -1,7 +1,7 @@
 ---
 title: "FireWyrm: Lightweight Async Testing for the Browser"
 sidebarTitle: "Overview"
-description: "FireWyrm (fw) is a zero-config async test runner with 25+ chainable assertions, test sections, sequential queuing, and object mocking — in ~5 KB."
+description: "FireWyrm (fw) is a zero-config async test runner with 40 chainable assertions, test sections, sequential queuing, and object mocking — in ~5 KB."
 ---
 
 FireWyrm (`fw`) is WyvernJS's built-in testing module. It runs every test sequentially through a `Promise`-based queue, supports `async` test functions natively without any additional setup, and organises tests into named sections that each emit their own pass/fail summary. Results are printed to the console using clear ✅/❌ markers. FireWyrm ships as a single file with no dependencies and targets ES9+ environments — it works in modern browsers and in Node.js, and is exported under both the full name `firewyrm` and the short alias `fw`.
@@ -78,7 +78,7 @@ Each section opens with an `===` header, lists every test with its ✅ or ❌ ou
 
 <CardGroup cols={2}>
   <Card title="Tests & Assertions" icon="flask" href="/firewyrm/tests-assertions">
-    Full reference for fw.test(), fw.assert(), and all 30+ chainable matchers.
+    Full reference for fw.test(), fw.assert(), and all 40 chainable matchers.
   </Card>
   <Card title="Mocking" icon="swap" href="/firewyrm/mocking">
     Replace object methods with stubs using fw.mock() and restore them afterwards.

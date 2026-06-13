@@ -1,7 +1,7 @@
 ---
-title: "Install WyvernJS via npm or CDN"
+title: "Install WyvernJS via npm, CDN Script Tags, or ES Modules"
 sidebarTitle: "Installation"
-description: "Add WyvernJS to your project using npm, ES module imports from jsDelivr, or classic script tags — no build step required."
+description: "Add WyvernJS to your project using npm, ES module imports from jsDelivr, or classic script tags. No build step or bundler required."
 ---
 
 WyvernJS supports three install methods — npm for Node.js and bundler environments, ES module CDN imports for modern browsers using native `import` syntax, and classic `<script>` tags for zero-setup browser usage with no build step whatsoever. All three methods expose the same `dw`, `tf`, `fw`, and `sh` globals or named exports, so you can swap between them without changing application code.
@@ -35,7 +35,7 @@ WyvernJS supports three install methods — npm for Node.js and bundler environm
     // Individual modules
     import { dw, diwu } from '@mchen_dragon/wyvernjs/diwu';
     import { tf, tianfeng } from '@mchen_dragon/wyvernjs/tianfeng';
-    import { fw, firewyrm } from '@mchen_dragon/wyvernjs/firewyrm';
+    import { fw, firewyrm } from '@mchen_dragon/wyvernjs/firewyvern';
     import { sh, shuihu } from '@mchen_dragon/wyvernjs/shuihu';
     ```
   </Tab>
@@ -47,7 +47,7 @@ WyvernJS supports three install methods — npm for Node.js and bundler environm
     <!-- Individual modules — load only what you need -->
     <script src="https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/diwu.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/tianfeng.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/firewyrm.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/firewyvern.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/shuihu.js"></script>
 
     <!-- Or load all four at once -->
@@ -64,7 +64,7 @@ WyvernJS supports three install methods — npm for Node.js and bundler environm
     // Individual modules
     import { dw, diwu }         from 'https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/diwu.js';
     import { tf, tianfeng }     from 'https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/tianfeng.js';
-    import { fw, firewyrm }     from 'https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/firewyrm.js';
+    import { fw, firewyrm }     from 'https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/firewyvern.js';
     import { sh, shuihu }       from 'https://cdn.jsdelivr.net/npm/@mchen_dragon/wyvernjs@latest/main/shuihu.js';
 
     // All at once from the combined bundle
@@ -83,7 +83,7 @@ When using npm, the `exports` field in `package.json` maps the following import 
 | Import path | File |
 |---|---|
 | `@mchen_dragon/wyvernjs` | `main/wyvern.js` (all four modules combined) |
-| `@mchen_dragon/wyvernjs/firewyrm` | `main/firewyrm.js` |
+| `@mchen_dragon/wyvernjs/firewyvern` | `main/firewyvern.js` |
 | `@mchen_dragon/wyvernjs/shuihu` | `main/shuihu.js` |
 | `@mchen_dragon/wyvernjs/diwu` | `main/diwu.js` |
 | `@mchen_dragon/wyvernjs/tianfeng` | `main/tianfeng.js` |

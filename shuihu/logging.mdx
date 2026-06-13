@@ -4,7 +4,7 @@ sidebarTitle: "Logging"
 description: "ShuiHu stores all log entries in memory with timestamps and severity labels, and can render them into the DOM with createLogHolder() and outputElementLogs()."
 ---
 
-Every call to a ShuiHu log method — `log`, `debug`, `warn`, `error`, or `dire` — records a `{ statement, context, label, timestamp }` entry in an internal array and routes output to `console.log`, `console.warn`, or `console.error` depending on severity. The timestamp is formatted as `HH:MM;SS.ms` using the local clock at the moment the log is recorded.
+Every call to a ShuiHu log method — `log`, `debug`, `warn`, `error`, or `dire` — records a `{ statement, context, label, timestamp }` entry in an internal array and routes output to `console.log`, `console.warn`, or `console.error` depending on severity. The timestamp is formatted as `H:M;S.ms` (hours, minutes, seconds, milliseconds separated by `:`, `;`, and `.` respectively) using the local clock at the moment the log is recorded. Values are **not** zero-padded — for example, 9 hours, 7 minutes, 3 seconds, 50ms is recorded as `9:7;3.50`.
 
 ## Log methods
 
@@ -62,6 +62,10 @@ sh.setUpdateFn(() => {
 ```
 
 Only one update function is active at a time. Calling `setUpdateFn` again replaces the previous one.
+
+<Warning>
+  In the current release, `setUpdateFn` stores the callback as `this.updateFunction` on the public object, but the internal `_log` function reads a separate closure-scoped variable. As a result, the registered callback is **not invoked** when a log entry is recorded. This is a known bug — avoid relying on `setUpdateFn` until it is resolved.
+</Warning>
 
 ## `sh.clear()`
 

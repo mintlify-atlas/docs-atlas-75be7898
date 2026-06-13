@@ -1,5 +1,5 @@
 ---
-title: "Get Started with WyvernJS in 5 Minutes"
+title: "WyvernJS Quickstart: Build a Working App in 5 Minutes"
 sidebarTitle: "Quickstart"
 description: "Initialize WyvernJS, manipulate the DOM with DiWu, run your first test with FireWyrm, and log a benchmark with ShuiHu in under five minutes."
 ---
@@ -102,7 +102,7 @@ This page walks you through a complete working example using all four WyvernJS m
       // fw.assert() has 25+ chainable matchers
       fw.section('Type checks');
       fw.assert('Result is a number', () => 3 * 4).isNumber();
-      fw.assert('Array is not empty',  () => [1, 2, 3]).isEmpty().isFalsey; // negation example
+      fw.assert('Array has three items', () => [1, 2, 3]).hasLength(3);
 
       fw.end(); // flushes remaining sections and prints final results
     }

@@ -1,7 +1,7 @@
 ---
-title: "DOM Manipulation Methods in DiWu"
+title: "DiWu DOM Manipulation: Chainable HTMLElement Methods"
 sidebarTitle: "Manipulation"
-description: "DiWu adds chainable methods to HTMLElement for appending, prepending, replacing, showing, hiding, toggling, and setting content."
+description: "DiWu extends HTMLElement with chainable methods for appending, prepending, replacing, toggling visibility, and setting text, HTML, or attributes."
 ---
 
 DiWu adds a suite of manipulation methods to `HTMLElement.prototype` and `Element.prototype`. Every method returns `this` (or the replacement element, in the case of `replaceAs`) so calls can be composed into fluent chains without ever breaking out of an expression. Methods are grouped below by their role.
@@ -32,7 +32,7 @@ el.empty();
 
 **`el.append(node)`** — Appends a string (as a text node), a single `Node`, or an array of nodes to the element. Returns `this`.
 
-**`el.prepend(node)`** — Prepends a string, a single `Node`, or an array of nodes. When passed an array, nodes are reversed before insertion so they appear in their original order at the front. Returns `this`.
+**`el.prepend(node)`** — Prepends a string, a single `Node`, or an array of nodes. When passed an array, nodes are reversed before insertion so they appear in their original order at the front. Returns `this`. Internally DiWu's `prepend` delegates to `el.prependChild`, which `dw.init()` sets up as an alias for the native `HTMLElement.prototype.prepend` — this ensures the custom implementation does not conflict with the built-in. Because `HTMLElement.prototype.prepend` already exists natively, DiWu skips adding its own `prepend` definition by default; pass `{ prepend: 'force' }` to `dw.init()` to override. The `prependChild` alias is always registered unless `{ prepend: false }` is passed.
 
 **`el.appendTo(parent)`** — Appends `this` element as a child of `parent`. Returns `this`.
 

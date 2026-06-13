@@ -1,7 +1,7 @@
 ---
-title: "DOM Event Handling with DiWu"
+title: "WeakMap-Backed DOM Event Handling with DiWu Methods"
 sidebarTitle: "Events"
-description: "DiWu adds .on(), .off(), .once(), and .promiseMeOnce() to EventTarget with a WeakMap registry that prevents duplicate listeners."
+description: "DiWu adds .on(), .off(), .once(), and .promiseMeOnce() to EventTarget — a WeakMap registry prevents duplicate listeners and enables wildcard removal."
 ---
 
 DiWu adds four event methods to `EventTarget.prototype`, all backed by a `WeakMap` + `Map` registry that tracks every listener by element identity and event type. This registry prevents duplicate registrations, makes wildcard removal possible, and ensures that `once`-style listeners clean up after themselves reliably. All methods return `this` for chaining, with the exception of `promiseMeOnce`, which returns a `Promise`.
@@ -19,12 +19,13 @@ btn.on(['mouseenter', 'focus'], showTooltip);
 
 ## `el.off(eventType?, listener?)`
 
-Removes previously registered listeners from the element. The `eventType` parameter defaults to `'*'`, which acts as a wildcard and removes every listener on the element regardless of type. Pass an array of event types to remove all listeners for several events at once. If `listener` is supplied, only that specific function is removed; if omitted, all listeners for the given event type are removed.
+Removes previously registered listeners from the element. The `eventType` parameter defaults to `'*'`, which acts as a wildcard and removes every listener on the element regardless of type — so calling `off()` with no arguments is equivalent to `off('*')` and removes all listeners at once. Pass an array of event types to remove all listeners for several events at once. If `listener` is supplied, only that specific function is removed; if omitted, all listeners for the given event type are removed.
 
 ```js
 btn.off('click', handler);    // remove one specific listener
 btn.off('click');             // remove all 'click' listeners
 btn.off('*');                 // remove ALL listeners on this element
+btn.off();                    // same as off('*') — removes everything
 btn.off(['click', 'focus']);  // remove all listeners for multiple events
 ```
 

@@ -19,6 +19,10 @@ ShuiHu defines four severity levels. Each level maps to a numeric value used whe
 
 `sh.log` is a direct alias for `sh.debug` and behaves identically.
 
+<Note>
+  A `benchmark` label also exists internally at level `0`. It is used automatically by `sh.time` when a timer is stopped and cannot be called directly — there is no `sh.benchmark()` method. Because it shares level `0` with `debug`, benchmark reports are included whenever you filter at `'debug'` (the default).
+</Note>
+
 ```js
 sh.log('User logged in');               // debug level
 sh.debug('Fetching items', { url });    // debug with context

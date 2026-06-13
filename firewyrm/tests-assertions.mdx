@@ -1,10 +1,10 @@
 ---
-title: "Writing Tests and Assertions with FireWyrm"
+title: "FireWyrm Tests and Assertions: Complete API Reference"
 sidebarTitle: "Tests & Assertions"
-description: "Learn fw.start(), fw.section(), fw.test(), fw.assert(), and all 30+ chainable assertion matchers available in FireWyrm."
+description: "Complete reference for FireWyrm's test methods — fw.start(), fw.test(), fw.assert(), fw.end() — and all 40 chainable matchers with examples."
 ---
 
-FireWyrm provides two complementary ways to write tests: `fw.test()` for boolean-return tests and `fw.assert()` for chainable-matcher assertions. Both methods are async-safe, both enqueue to the same sequential internal queue and execute in registration order, and both return `fw` so you can chain calls fluently. The moment you call `fw.start()` the queue begins draining automatically — you never need to trigger a run manually.
+FireWyrm provides two complementary ways to write tests: `fw.test()` for boolean-return tests and `fw.assert()` for chainable-matcher assertions. Both methods are async-safe, both enqueue to the same sequential internal queue and execute in registration order, and both return `fw` so you can chain calls fluently. The moment you call `fw.start()` the queue begins draining automatically — you never need to trigger a run manually. FireWyrm ships with 40 chainable assertion matchers covering equality, types, numerics, collections, errors, and promises.
 
 ---
 
@@ -45,6 +45,8 @@ fw.test('DB connect', async () => {
 
 Enqueues a test. `testFunc` may be a synchronous or asynchronous function; FireWyrm awaits it and evaluates the return value as a boolean. A truthy result is a pass; a falsy result or an uncaught exception is a failure.
 
+If `fw.test()` is called **outside** a `fw.start()` / `fw.end()` block (i.e. `runningTest` is `false`), FireWyrm automatically calls `fw.end(false)` after enqueuing the test. This flushes the queue immediately without printing the final summary block — useful for one-off quick checks.
+
 Returns `fw`.
 
 ```js
@@ -62,12 +64,14 @@ fw.test('Async fetch', async () => {
 
 Creates an assertion chain. `testValue` can be a raw value, a synchronous function that returns the value under test, or a `Promise` — FireWyrm resolves it before passing it to the matcher. Call one matcher method on the returned object to enqueue the test.
 
+If `fw.assert()` is called **outside** a `fw.start()` / `fw.end()` block (i.e. `runningTest` is `false`), FireWyrm automatically calls `fw.end(false)` after the assertion is enqueued. This flushes the queue immediately without printing the final summary block — the same behaviour as standalone `fw.test()`.
+
 Returns a chainable assertion object (see [Assertion matchers](#assertion-matchers) below).
 
 ```js
 fw.assert('2 + 2', () => 2 + 2).is(4);
 fw.assert('Type check', typeof 'hello').isString();
-fw.assert('Async value', fetchJson('/api/ping')).resolvesTo({ ok: true });
+fw.assert('Async resolves', fetchJson('/api/ping')).resolvesTo(200);
 ```
 
 ---

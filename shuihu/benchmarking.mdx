@@ -27,7 +27,7 @@ Records a step checkpoint relative to the benchmark's start time. `flag` must be
 Calls `sh.error()` and returns `null` if:
 - `flag` is not a number.
 - The benchmark does not exist (i.e. `start()` was not called).
-- The step count would exceed 500 (internal index > 998).
+- The step count would exceed 500 (internal index has reached 1000, past the 998 write boundary).
 
 ```js
 sh.time.renderLoop.step(0);  // flag 0 at this point in time
@@ -36,7 +36,7 @@ sh.time.renderLoop.step(42); // flag 42 — e.g. an iteration index
 
 ### `sh.time.<label>.stop()`
 
-Stops the benchmark, assembles a formatted report string, logs it via `sh.log` under the `'benchmark'` label, and deletes the benchmark from memory.
+Stops the benchmark, assembles a formatted report string, logs it internally under the `'benchmark'` label (level 0), and deletes the benchmark from memory.
 
 Calls `sh.error()` and returns `null` if the benchmark does not exist.
 
@@ -107,5 +107,5 @@ if (earlyExit) {
 </Tip>
 
 <Warning>
-  Each benchmark supports a maximum of **500 steps**. Attempting to record a step when the internal index exceeds 998 (i.e. a 501st step) will trigger `sh.error()` and the step will not be recorded. If you need to profile loops longer than 500 iterations, consider sampling — for example, only calling `step()` every N iterations.
+  Each benchmark supports a maximum of **500 steps**. The 500th step writes to positions `[998]` and `[999]` of the internal `Uint32Array`, leaving the index at 1000. Any attempt to record a 501st step finds `index > 998` and triggers `sh.error()` — the step is not recorded. If you need to profile loops longer than 500 iterations, consider sampling — for example, only calling `step()` every N iterations.
 </Warning>

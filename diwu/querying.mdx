@@ -1,5 +1,5 @@
 ---
-title: "DOM Querying and CSS Helpers in DiWu"
+title: "DiWu Query Helpers: qs, qsa, and $ on DOM Prototypes"
 sidebarTitle: "Querying"
 description: "DiWu adds .qs(), .qsa(), and .$() as shorthand query selectors on Element, Document, and DocumentFragment, plus .css() for inline style application."
 ---
@@ -26,7 +26,7 @@ items.forEach(el => el.css({ color: 'blue' }));
 
 ## `el.$(selector)`
 
-Wraps `getElementById`. Returns the element whose `id` attribute matches `selector`, or `null` if none exists. Because `getElementById` is scoped to `document`, this is effectively a document-level lookup regardless of which element it is called on.
+Wraps `getElementById` via `this.document.getElementById(selector)`. Returns the element whose `id` attribute matches `selector`, or `null` if none exists. Note that this method reads `this.document` rather than the global `document` — it is scoped to whatever `.document` property the calling object exposes, not the global page document.
 
 ```js
 const header = document.$('main-header');
